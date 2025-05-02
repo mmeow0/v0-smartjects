@@ -112,16 +112,20 @@ export function TopNav() {
                   <Link href="/settings">Settings</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/proposals">My Proposals</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/matches">My Matches</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/contracts">My Contracts</Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
+                {user?.accountType === "paid" && (
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link href="/proposals">My Proposals</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/matches">My Matches</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/contracts">My Contracts</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
                 {user?.accountType === "free" && (
                   <DropdownMenuItem asChild>
                     <Link href="/upgrade">Upgrade to Paid</Link>
