@@ -43,8 +43,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const login = async (email: string, password: string) => {
-    // In a real app, this would call an API
-    // For demo purposes, we'll simulate a successful login
+    // Check for specific test users
+    if (email === "paid_account@mail.ru" && password === "Test@1234") {
+      const paidUser: UserType = {
+        id: "user-paid",
+        name: "Paid User",
+        email,
+        accountType: "paid",
+        avatar: "/placeholder.svg?height=40&width=40",
+      }
+      setUser(paidUser)
+      setIsAuthenticated(true)
+      localStorage.setItem("smartjects-user", JSON.stringify(paidUser))
+      return
+    }
+
+    if (email === "non_paid_account@mail.ru" && password === "Test@1234") {
+      const freemiumUser: UserType = {
+        id: "user-free",
+        name: "Free User",
+        email,
+        accountType: "free",
+        avatar: "/placeholder.svg?height=40&width=40",
+      }
+      setUser(freemiumUser)
+      setIsAuthenticated(true)
+      localStorage.setItem("smartjects-user", JSON.stringify(freemiumUser))
+      return
+    }
+
+    // For any other email/password, create a default user (for demo purposes)
     const mockUser: UserType = {
       id: "user-1",
       name: "Demo User",
