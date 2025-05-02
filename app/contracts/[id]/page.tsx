@@ -226,6 +226,29 @@ export default function ContractDetailsPage({ params }: { params: { id: string }
         timestamp: "2024-01-21T09:45:00",
       },
     ],
+    documentVersions: [
+      {
+        id: "version-3",
+        versionNumber: 3,
+        date: "2024-02-15",
+        author: "Tech Solutions Inc.",
+        changes: ["Updated payment schedule for milestone 3", "Extended contract end date by 2 weeks"],
+      },
+      {
+        id: "version-2",
+        versionNumber: 2,
+        date: "2024-01-25",
+        author: "Global Logistics Corp",
+        changes: ["Added additional deliverable: Training materials", "Clarified scope of work"],
+      },
+      {
+        id: "version-1",
+        versionNumber: 1,
+        date: "2024-01-15",
+        author: "System",
+        changes: ["Initial contract creation"],
+      },
+    ],
   }
 
   // Calculate overall progress
@@ -474,6 +497,7 @@ export default function ContractDetailsPage({ params }: { params: { id: string }
               scope={contract.scope}
               deliverables={contract.deliverables}
               paymentSchedule={contract.paymentSchedule}
+              versions={contract.documentVersions}
             />
             <Button variant="outline" onClick={handleSendMessage}>
               <MessageSquare className="h-4 w-4 mr-2" />

@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useEffect, useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -16,27 +16,23 @@ import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { FileUploader } from "@/components/file-uploader"
-import { mockSmartjects } from "@/lib/mock-data"
 import { ArrowLeft, ArrowRight, Save, Send, FileText, Calendar, DollarSign } from "lucide-react"
 import { ProposalDocumentPreview } from "@/components/proposal-document-preview"
 import type { DocumentVersion } from "@/components/document-version-history"
 
-export default function CreateProposalPage() {
+export default function EditProposalPage({ params }: { params: { id: string } }) {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const { toast } = useToast()
   const { user, isAuthenticated } = useAuth()
-  const smartjectId = searchParams.get("smartjectId")
-
-  // Find the smartject if ID is provided
-  const smartject = smartjectId ? mockSmartjects.find((s) => s.id === smartjectId) : null
+  const [isLoading, setIsLoading] = useState(true)
 
   // Form state
   const [currentStep, setCurrentStep] = useState(1)
   const [proposalType, setProposalType] = useState<"need" | "provide" | null>(null)
   const [formData, setFormData] = useState({
-    title: smartject ? `Proposal for: ${smartject.title}` : "",
-    smartjectId: smartjectId || "",
+    title: "",
+    smartjectId: "",
+    smartjectTitle: "",
     description: "",
     scope: "",
     timeline: "",
@@ -51,15 +47,7 @@ export default function CreateProposalPage() {
   const [files, setFiles] = useState<File[]>([])
   const [isSaving, setIsSaving] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [draftVersions, setDraftVersions] = useState<DocumentVersion[]>([
-    {
-      id: "draft-1",
-      versionNumber: 1,
-      date: new Date().toISOString(),
-      author: user?.name || "User",
-      changes: ["Initial draft creation"],
-    },
-  ])
+  const [documentVersions, setDocumentVersions] = useState<DocumentVersion[]>([])
 
   // Redirect if not authenticated or not a paid user
   useEffect(() => {
@@ -67,11 +55,125 @@ export default function CreateProposalPage() {
       router.push("/auth/login")
     } else if (user?.accountType !== "paid") {
       router.push("/upgrade")
+    } else {
+      // Fetch proposal data
+      fetchProposalData()
     }
-  }, [isAuthenticated, router, user])
+  }, [isAuthenticated, router, user, params.id])
+
+  const fetchProposalData = () => {
+    // In a real app, we would fetch the proposal data from an API
+    // For now, we'll use mock data
+    setTimeout(() => {
+      // Mock proposal data
+      const proposal = {
+        id: params.id,
+        title: "AI-Powered Supply Chain Optimization Implementation",
+        type: "provide",
+        status: "submitted",
+        createdAt: "2023-12-01",
+        updatedAt: "2023-12-05",
+        smartjectId: "smartject-1",
+        smartjectTitle: "AI-Powered Supply Chain Optimization",
+        description:
+          "This proposal outlines our approach to implementing an AI-powered supply chain optimization solution that will predict disruptions and optimize inventory management based on real-time data analysis.",
+        scope:
+          "The project will include data integration from existing systems, machine learning model development, dashboard creation, and staff training.",
+        timeline: "3 months",
+        budget: "$15,000",
+        deliverables: [
+          "Data integration framework",
+          "Machine learning prediction model",
+          "Real-time monitoring dashboard",
+          "Documentation and training materials",
+        ].join("\n"),
+        approach:
+          "We will use a phased approach, starting with data integration, followed by model development, dashboard creation, and finally deployment and training.",
+        expertise:
+          "Our team has 5+ years of experience implementing AI solutions for supply chain optimization across various industries.",
+        team: "1 Project Manager, 2 Data Scientists, 1 UI/UX Designer, 1 Integration Specialist",
+        additionalInfo: "We have successfully implemented similar solutions for 3 Fortune 500 companies.",
+        files: [
+          { name: "implementation-plan.pdf", size: "2.4 MB", type: "pdf" },
+          { name: "team-credentials.docx", size: "1.8 MB", type: "docx" },
+          { name: "sample-dashboard.png", size: "3.2 MB", type: "image" },
+        ],
+        documentVersions: [
+          {
+            id: "version-3",
+            versionNumber: 3,
+            date: "2023-12-05",
+            author: "Tech Solutions Inc.",
+            changes: [
+              "Updated budget from $12,000 to $15,000",
+              "Extended timeline from 2 months to 3 months",
+              "Added additional deliverable: Training materials",
+            ],
+          },
+          {
+            id: "version-2",
+            versionNumber: 2,
+            date: "2023-12-03",
+            author: "Tech Solutions Inc.",
+            changes: ["Added detailed implementation approach", "Updated team composition"],
+          },
+          {
+            id: "version-1",
+            versionNumber: 1,
+            date: "2023-12-01",
+            author: "Tech Solutions Inc.",
+            changes: ["Initial proposal creation"],
+          },
+        ],
+      }
+
+      // Set form data
+      setFormData({
+        title: proposal.title,
+        smartjectId: proposal.smartjectId,
+        smartjectTitle: proposal.smartjectTitle,
+        description: proposal.description,
+        scope: proposal.scope,
+        timeline: proposal.timeline,
+        budget: proposal.budget,
+        deliverables: proposal.deliverables,
+        requirements: proposal.type === "need" ? proposal.requirements : "",
+        expertise: proposal.type === "provide" ? proposal.expertise : "",
+        approach: proposal.type === "provide" ? proposal.approach : "",
+        team: proposal.type === "provide" ? proposal.team : "",
+        additionalInfo: proposal.additionalInfo || "",
+      })
+
+      // Set proposal type
+      setProposalType(proposal.type as "need" | "provide")
+
+      // Set document versions
+      setDocumentVersions(proposal.documentVersions)
+
+      setIsLoading(false)
+    }, 1000)
+  }
 
   if (!isAuthenticated || user?.accountType !== "paid") {
     return null
+  }
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center mb-6">
+            <div className="h-10 w-10 bg-gray-200 rounded-md animate-pulse mr-4"></div>
+            <div>
+              <div className="h-6 w-48 bg-gray-200 rounded-md animate-pulse mb-2"></div>
+              <div className="h-4 w-64 bg-gray-200 rounded-md animate-pulse"></div>
+            </div>
+          </div>
+          <div className="h-8 w-full bg-gray-200 rounded-md animate-pulse mb-8"></div>
+          <div className="h-96 w-full bg-gray-200 rounded-md animate-pulse"></div>
+        </div>
+      </div>
+    )
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -88,14 +190,14 @@ export default function CreateProposalPage() {
 
     // Create a new version entry
     const newVersion: DocumentVersion = {
-      id: `draft-${draftVersions.length + 1}`,
-      versionNumber: draftVersions.length + 1,
+      id: `version-${documentVersions.length + 1}`,
+      versionNumber: documentVersions.length + 1,
       date: new Date().toISOString(),
       author: user?.name || "User",
-      changes: ["Draft updated"],
+      changes: ["Updated proposal draft"],
     }
 
-    setDraftVersions([newVersion, ...draftVersions])
+    setDocumentVersions([newVersion, ...documentVersions])
 
     // In a real app, we would call an API to save the draft
     setTimeout(() => {
@@ -113,11 +215,11 @@ export default function CreateProposalPage() {
     // In a real app, we would call an API to submit the proposal
     setTimeout(() => {
       toast({
-        title: "Proposal submitted",
-        description: "Your proposal has been submitted successfully.",
+        title: "Proposal updated",
+        description: "Your proposal has been updated successfully.",
       })
       setIsSubmitting(false)
-      router.push("/proposals")
+      router.push(`/proposals/${params.id}`)
     }, 1500)
   }
 
@@ -161,34 +263,18 @@ export default function CreateProposalPage() {
                   </Label>
                 </div>
               </RadioGroup>
-              {!proposalType && (
-                <p className="text-sm text-muted-foreground">
-                  Please select whether you need this smartject implemented or you can provide implementation services.
-                </p>
-              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="smartjectId">Smartject</Label>
-              {smartject ? (
-                <div className="p-4 border rounded-md">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-medium">{smartject.title}</h3>
-                      <p className="text-sm text-muted-foreground">{smartject.description.substring(0, 100)}...</p>
-                    </div>
-                    <Badge>{smartjectId}</Badge>
+              <div className="p-4 border rounded-md">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-medium">{formData.smartjectTitle}</h3>
                   </div>
+                  <Badge>{formData.smartjectId}</Badge>
                 </div>
-              ) : (
-                <Input
-                  id="smartjectId"
-                  name="smartjectId"
-                  placeholder="Enter Smartject ID"
-                  value={formData.smartjectId}
-                  onChange={handleInputChange}
-                />
-              )}
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -360,6 +446,51 @@ export default function CreateProposalPage() {
               <p className="text-sm text-muted-foreground">
                 Upload any supporting documents such as diagrams, specifications, or portfolios (max 5 files, 10MB each)
               </p>
+
+              {/* Display existing files */}
+              {files.length === 0 && (
+                <div className="mt-4">
+                  <h4 className="text-sm font-medium mb-2">Current Files</h4>
+                  <ul className="space-y-2">
+                    <li className="flex items-center justify-between p-3 border rounded-md">
+                      <div className="flex items-center">
+                        <FileText className="h-5 w-5 mr-2 text-blue-500" />
+                        <span>implementation-plan.pdf</span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="text-sm text-muted-foreground mr-4">2.4 MB</span>
+                        <Button variant="ghost" size="sm">
+                          Remove
+                        </Button>
+                      </div>
+                    </li>
+                    <li className="flex items-center justify-between p-3 border rounded-md">
+                      <div className="flex items-center">
+                        <FileText className="h-5 w-5 mr-2 text-blue-500" />
+                        <span>team-credentials.docx</span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="text-sm text-muted-foreground mr-4">1.8 MB</span>
+                        <Button variant="ghost" size="sm">
+                          Remove
+                        </Button>
+                      </div>
+                    </li>
+                    <li className="flex items-center justify-between p-3 border rounded-md">
+                      <div className="flex items-center">
+                        <FileText className="h-5 w-5 mr-2 text-blue-500" />
+                        <span>sample-dashboard.png</span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="text-sm text-muted-foreground mr-4">3.2 MB</span>
+                        <Button variant="ghost" size="sm">
+                          Remove
+                        </Button>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+              )}
             </div>
 
             <div className="space-y-4 mt-8">
@@ -397,7 +528,7 @@ export default function CreateProposalPage() {
                     <p className="text-sm font-medium flex items-center gap-1">
                       <FileText className="h-4 w-4" /> Files
                     </p>
-                    <p>{files.length} attached</p>
+                    <p>{files.length > 0 ? files.length : 3} attached</p>
                   </div>
                 </div>
               </div>
@@ -405,9 +536,9 @@ export default function CreateProposalPage() {
 
             <div className="flex justify-center mt-6">
               <ProposalDocumentPreview
-                proposalId="draft"
+                proposalId={params.id}
                 title={formData.title}
-                smartjectTitle={smartject?.title || formData.smartjectId}
+                smartjectTitle={formData.smartjectTitle}
                 type={proposalType || "need"}
                 description={formData.description}
                 scope={formData.scope}
@@ -422,7 +553,7 @@ export default function CreateProposalPage() {
                 userName={user?.name || "User Name"}
                 userEmail={user?.email || "user@example.com"}
                 createdAt={new Date().toISOString()}
-                versions={draftVersions}
+                versions={documentVersions}
               />
             </div>
           </div>
@@ -442,8 +573,8 @@ export default function CreateProposalPage() {
             Back
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">Create Proposal</h1>
-            <p className="text-muted-foreground">Create a detailed proposal for a smartject</p>
+            <h1 className="text-2xl font-bold">Edit Proposal</h1>
+            <p className="text-muted-foreground">Update your proposal for {formData.smartjectTitle}</p>
           </div>
         </div>
 
@@ -481,14 +612,14 @@ export default function CreateProposalPage() {
             </CardTitle>
             <CardDescription>
               {currentStep === 1
-                ? "Provide basic information about your proposal"
+                ? "Update basic information about your proposal"
                 : currentStep === 2
-                  ? "Define the scope, timeline, and budget for the project"
+                  ? "Modify the scope, timeline, and budget for the project"
                   : currentStep === 3
                     ? proposalType === "need"
-                      ? "Specify your detailed requirements for this smartject"
-                      : "Describe your expertise and approach to implementing this smartject"
-                    : "Upload supporting documents and review your proposal"}
+                      ? "Update your detailed requirements for this smartject"
+                      : "Revise your expertise and approach to implementing this smartject"
+                    : "Update supporting documents and review your proposal"}
             </CardDescription>
           </CardHeader>
           <CardContent>{renderStepContent()}</CardContent>
@@ -507,14 +638,14 @@ export default function CreateProposalPage() {
                 {isSaving ? "Saving..." : "Save Draft"}
               </Button>
               {currentStep < 4 ? (
-                <Button onClick={nextStep} disabled={currentStep === 1 && !proposalType}>
+                <Button onClick={nextStep}>
                   Next
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>
               ) : (
                 <Button onClick={handleSubmit} disabled={isSubmitting}>
                   <Send className="h-4 w-4 mr-2" />
-                  {isSubmitting ? "Submitting..." : "Submit Proposal"}
+                  {isSubmitting ? "Updating..." : "Update Proposal"}
                 </Button>
               )}
             </div>

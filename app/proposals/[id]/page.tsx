@@ -114,6 +114,33 @@ export default function ProposalDetailPage({ params }: { params: { id: string } 
         createdAt: "2023-12-04",
       },
     ],
+    documentVersions: [
+      {
+        id: "version-3",
+        versionNumber: 3,
+        date: "2023-12-05",
+        author: "Tech Solutions Inc.",
+        changes: [
+          "Updated budget from $12,000 to $15,000",
+          "Extended timeline from 2 months to 3 months",
+          "Added additional deliverable: Training materials",
+        ],
+      },
+      {
+        id: "version-2",
+        versionNumber: 2,
+        date: "2023-12-03",
+        author: "Tech Solutions Inc.",
+        changes: ["Added detailed implementation approach", "Updated team composition"],
+      },
+      {
+        id: "version-1",
+        versionNumber: 1,
+        date: "2023-12-01",
+        author: "Tech Solutions Inc.",
+        changes: ["Initial proposal creation"],
+      },
+    ],
   }
 
   const getStatusBadge = (status: string) => {
@@ -302,6 +329,7 @@ export default function ProposalDetailPage({ params }: { params: { id: string } 
                   userName={user?.name || "User Name"}
                   userEmail={user?.email || "user@example.com"}
                   createdAt={proposal.createdAt}
+                  versions={proposal.documentVersions}
                 />
                 <Button variant="outline" onClick={handleEdit}>
                   <Pencil className="h-4 w-4 mr-2" />
