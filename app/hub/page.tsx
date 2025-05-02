@@ -1,50 +1,123 @@
+"use client"
+
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SmartjectCard } from "@/components/smartject-card"
-import { SearchBar } from "@/components/search-bar"
 import { mockSmartjects } from "@/lib/mock-data"
 
+// Варианты фильтрации
+const industries = ["Supply Chain", "Manufacturing", "Finance", "Customer Support"]
+const technologies = ["AI", "ML", "NLP", "IoT"]
+const functions = ["Forecasting", "Optimization", "Automation"]
+
 export default function SmartjectsHubPage() {
+  const [query, setQuery] = useState("")
+  const [selectedIndustries, setSelectedIndustries] = useState<string[]>([])
+  const [selectedTechnologies, setSelectedTechnologies] = useState<string[]>([])
+  const [selectedFunctions, setSelectedFunctions] = useState<string[]>([])
+
+  const handleToggle = (value: string, selected: string[], setSelected: (v: string[]) => void) => {
+    if (selected.includes(value)) {
+      setSelected(selected.filter((v) => v !== value))
+    } else {
+      setSelected([...selected, value])
+    }
+  }
+
+const filteredSmartjects = mockSmartjects.filter((s) => {
+  const matchesQuery =
+    s.title?.toLowerCase().includes(query.toLowerCase()) ||
+    s.description?.toLowerCase().includes(query.toLowerCase())
+
+  const matchesIndustries =
+    selectedIndustries.length === 0 ||
+    selectedIndustries.some((i) => s.industries?.includes(i))
+
+  const matchesTechnologies =
+    selectedTechnologies.length === 0 ||
+    selectedTechnologies.some((t) => s.technologies?.includes(t))
+
+  const matchesFunctions =
+    selectedFunctions.length === 0 ||
+    selectedFunctions.some((f) => s.functions?.includes(f))
+
+  return matchesQuery && matchesIndustries && matchesTechnologies && matchesFunctions
+})
+
+
   return (
     <div className="container mx-auto px-4 py-6">
-      <div className="flex flex-col md:flex-row justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold">Smartjects Hub</h1>
-          <p className="text-muted-foreground">Explore all available AI implementation projects</p>
-        </div>
-        <div className="mt-4 md:mt-0">
-          <SearchBar />
-        </div>
-      </div>
-
       <div className="mb-8">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer">
-            <CardHeader className="p-4">
-              <CardTitle className="text-sm">Supply Chain</CardTitle>
-              <CardDescription>24 smartjects</CardDescription>
-            </CardHeader>
-          </Card>
-          <Card className="bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer">
-            <CardHeader className="p-4">
-              <CardTitle className="text-sm">Manufacturing</CardTitle>
-              <CardDescription>18 smartjects</CardDescription>
-            </CardHeader>
-          </Card>
-          <Card className="bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer">
-            <CardHeader className="p-4">
-              <CardTitle className="text-sm">Customer Support</CardTitle>
-              <CardDescription>15 smartjects</CardDescription>
-            </CardHeader>
-          </Card>
-          <Card className="bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer">
-            <CardHeader className="p-4">
-              <CardTitle className="text-sm">Finance</CardTitle>
-              <CardDescription>12 smartjects</CardDescription>
-            </CardHeader>
-          </Card>
-        </div>
+        <h1 className="text-3xl font-bold">Smartjects Hub</h1>
+        <p className="text-muted-foreground mb-4">
+          Explore all available AI implementation projects
+        </p>
+
+        {/* 🔍 Unified Search */}
+        <Card className="p-6 space-y-4 bg-muted/50">
+          <Input
+            placeholder="Search smartjects..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+
+          <div className="grid md:grid-cols-3 gap-4">
+            <div>
+              <p className="text-sm font-medium mb-1">Industries</p>
+              <div className="flex flex-wrap gap-2">
+                {industries.map((industry) => (
+                  <Button
+                    key={industry}
+                    variant={selectedIndustries.includes(industry) ? "default" : "outline"}
+                    size="sm"
+                    onClick={() =>
+                      handleToggle(industry, selectedIndustries, setSelectedIndustries)
+                    }
+                  >
+                    {industry}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="text-sm font-medium mb-1">Technologies</p>
+              <div className="flex flex-wrap gap-2">
+                {technologies.map((tech) => (
+                  <Button
+                    key={tech}
+                    variant={selectedTechnologies.includes(tech) ? "default" : "outline"}
+                    size="sm"
+                    onClick={() =>
+                      handleToggle(tech, selectedTechnologies, setSelectedTechnologies)
+                    }
+                  >
+                    {tech}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="text-sm font-medium mb-1">Functions</p>
+              <div className="flex flex-wrap gap-2">
+                {functions.map((func) => (
+                  <Button
+                    key={func}
+                    variant={selectedFunctions.includes(func) ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => handleToggle(func, selectedFunctions, setSelectedFunctions)}
+                  >
+                    {func}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </Card>
       </div>
 
       <Tabs defaultValue="all">
@@ -57,14 +130,9 @@ export default function SmartjectsHubPage() {
 
         <TabsContent value="all" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {mockSmartjects.map((smartject) => (
+            {filteredSmartjects.map((smartject) => (
               <SmartjectCard key={smartject.id} smartject={smartject} />
             ))}
-          </div>
-          <div className="flex justify-center mt-8">
-            <Button variant="outline" size="lg">
-              Load More
-            </Button>
           </div>
         </TabsContent>
 
