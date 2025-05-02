@@ -104,6 +104,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null)
     setIsAuthenticated(false)
     localStorage.removeItem("smartjects-user")
+
+    // Force a page reload to ensure all components re-render
+    window.location.href = "/"
   }
 
   return (
