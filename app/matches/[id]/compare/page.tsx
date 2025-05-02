@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { useAuth } from "@/hooks/use-auth"
+import { useAuth } from "@/components/auth-provider"
 import { ArrowLeft, Calendar, Check, DollarSign, FileText, MessageSquare, Star, Users } from "lucide-react"
 
 export default function CompareProposalsPage({ params }: { params: { id: string } }) {
