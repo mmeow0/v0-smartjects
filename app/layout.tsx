@@ -24,7 +24,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           <AuthProvider>
-            <div className="flex flex-col min-h-screen">
+            <div className="flex flex-col min-h-screen px-4">
               <TopNav />
               <main className="flex-1">{children}</main>
             </div>
