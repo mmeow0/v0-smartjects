@@ -27,12 +27,27 @@ export default function MilestoneDetailsPage({ params }: { params: { id: string;
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(true)
   const [comment, setComment] = useState("")
+  const [authChecked, setAuthChecked] = useState(false)
 
-  // Redirect if not authenticated or not a paid user
+  // Check authentication first
   useEffect(() => {
+    // Small delay to ensure auth state is loaded
+    const timer = setTimeout(() => {
+      setAuthChecked(true)
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [])
+
+  // Handle redirects after auth check
+  useEffect(() => {
+    if (!authChecked) return
+
     if (!isAuthenticated) {
+      console.log("Not authenticated, redirecting to login")
       router.push("/auth/login")
-    } else if (user?.accountType !== "paid") {
+    } else if (user && user.accountType !== "paid") {
+      console.log("Not a paid user, redirecting to upgrade")
       router.push("/upgrade")
     } else {
       // Simulate loading data
@@ -40,9 +55,15 @@ export default function MilestoneDetailsPage({ params }: { params: { id: string;
         setIsLoading(false)
       }, 1000)
     }
-  }, [isAuthenticated, router, user])
+  }, [authChecked, isAuthenticated, router, user])
 
-  if (!isAuthenticated || user?.accountType !== "paid" || isLoading) {
+  // Show loading state while checking auth
+  if (!authChecked) {
+    return null
+  }
+
+  // If not authenticated or not a paid user, don't render anything (redirect will happen)
+  if (!isAuthenticated || (user && user.accountType !== "paid") || isLoading) {
     return null
   }
 
@@ -55,7 +76,7 @@ export default function MilestoneDetailsPage({ params }: { params: { id: string;
     percentage: 30,
     amount: "$5,250",
     dueDate: "2024-02-28",
-    status: "in_progress", // completed, in_progress, pending, overdue
+    status: "pending_review", // completed, in_progress, pending, pending_review, overdue
     deliverables: [
       {
         name: "Data integration framework",
@@ -66,7 +87,8 @@ export default function MilestoneDetailsPage({ params }: { params: { id: string;
       {
         name: "Initial ML model prototype",
         description: "First version of the machine learning model with basic prediction capabilities",
-        status: "in_progress",
+        status: "completed",
+        completedDate: "2024-02-15",
       },
     ],
     documents: [
@@ -142,6 +164,7 @@ export default function MilestoneDetailsPage({ params }: { params: { id: string;
       description: "The milestone has been marked as complete and is pending review.",
     })
 
+    // Update to redirect to the contract details page
     router.push(`/contracts/${params.id}`)
   }
 
@@ -183,6 +206,12 @@ export default function MilestoneDetailsPage({ params }: { params: { id: string;
         return (
           <Badge variant="outline" className="flex items-center gap-1">
             <Clock className="h-3 w-3" /> Pending
+          </Badge>
+        )
+      case "pending_review":
+        return (
+          <Badge className="bg-amber-100 text-amber-800 flex items-center gap-1">
+            <Clock className="h-3 w-3" /> Pending Review
           </Badge>
         )
       case "overdue":
@@ -343,6 +372,12 @@ export default function MilestoneDetailsPage({ params }: { params: { id: string;
                   )}
                 </>
               )}
+              {milestone.status === "pending_review" && !isProvider && (
+                <Button onClick={() => router.push(`/contracts/${params.id}/milestone/${params.milestoneId}/review`)}>
+                  <Check className="h-4 w-4 mr-2" />
+                  Review Milestone
+                </Button>
+              )}
             </CardFooter>
           </Card>
 
@@ -465,6 +500,15 @@ export default function MilestoneDetailsPage({ params }: { params: { id: string;
                     </>
                   )}
                 </>
+              )}
+              {milestone.status === "pending_review" && !isProvider && (
+                <Button
+                  className="w-full justify-start"
+                  onClick={() => router.push(`/contracts/${params.id}/milestone/${params.milestoneId}/review`)}
+                >
+                  <Check className="h-4 w-4 mr-2" />
+                  Review Milestone
+                </Button>
               )}
             </CardContent>
           </Card>

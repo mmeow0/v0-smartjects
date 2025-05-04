@@ -344,7 +344,12 @@ export default function SmartjectDetailPage({ params }: { params: { id: string }
             </CardContent>
             <CardFooter className="flex justify-between border-t pt-6">
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="flex gap-2" onClick={() => handleVote("believe")}>
+                <Button
+                  disabled={!isAuthenticated}
+                  variant="outline" size="sm"
+                  className="flex gap-2"
+                  onClick={() => handleVote("believe")}
+                >
                   <Heart className="h-4 w-4" />
                   <span>I Believe ({smartject.votes.believe})</span>
                 </Button>

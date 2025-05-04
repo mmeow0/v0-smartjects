@@ -56,7 +56,12 @@ export function SmartjectCard({ smartject }: SmartjectCardProps) {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="sm" className="flex gap-2" onClick={() => handleVote("believe")}>
+                <Button
+                  disabled={!isAuthenticated}
+                  variant="ghost" size="sm"
+                  className="flex gap-2"
+                  onClick={() => handleVote("believe")}
+                >
                   <Heart className="h-4 w-4" />
                   <span>{votes.believe}</span>
                 </Button>

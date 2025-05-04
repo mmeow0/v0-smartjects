@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label"
 import { useAuth } from "@/components/auth-provider"
 import { useToast } from "@/hooks/use-toast"
 import {
+  AlertCircle,
   ArrowLeft,
   Calendar,
   Check,
@@ -20,9 +21,100 @@ import {
   FileText,
   MessageSquare,
   Paperclip,
+  Plus,
   Send,
   ThumbsUp,
+  Trash2,
+  X,
 } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Switch } from "@/components/ui/switch"
+import { DatePicker } from "@/components/ui/date-picker"
+import { MilestoneTimeline } from "@/components/milestone-timeline"
+
+// Define milestone type
+interface Milestone {
+  id: string
+  name: string
+  description: string
+  percentage: number
+  amount: string
+  dueDate: string
+}
+
+// Define mock data outside the component to prevent recreation on each render
+const getMockData = (matchId: string, proposalId: string) => ({
+  matchId,
+  proposalId,
+  smartjectTitle: "AI-Powered Supply Chain Optimization",
+  provider: {
+    id: "user-101",
+    name: "Tech Solutions Inc.",
+    avatar: "",
+    rating: 4.8,
+  },
+  needer: {
+    id: "user-201",
+    name: "Global Logistics Corp",
+    avatar: "",
+    rating: 4.6,
+  },
+  currentProposal: {
+    budget: "$15,000",
+    timeline: "3 months",
+    scope:
+      "The project will include data integration from existing systems, machine learning model development, dashboard creation, and staff training.",
+    deliverables: [
+      "Data integration framework",
+      "Machine learning prediction model",
+      "Real-time monitoring dashboard",
+      "Documentation and training materials",
+    ],
+  },
+  messages: [
+    {
+      id: "msg-1",
+      sender: "provider",
+      senderName: "Tech Solutions Inc.",
+      content:
+        "Thank you for considering our proposal. We're excited about the possibility of working together on this project.",
+      timestamp: "2023-12-06T10:30:00",
+      isCounterOffer: false,
+    },
+    {
+      id: "msg-2",
+      sender: "needer",
+      senderName: "Global Logistics Corp",
+      content: "We like your approach but we're wondering if the timeline could be shortened to 2.5 months?",
+      timestamp: "2023-12-06T14:15:00",
+      isCounterOffer: true,
+      counterOffer: {
+        budget: "$15,000",
+        timeline: "2.5 months",
+      },
+    },
+    {
+      id: "msg-3",
+      sender: "provider",
+      senderName: "Tech Solutions Inc.",
+      content:
+        "We could potentially shorten the timeline to 2.5 months, but it would require additional resources which would increase the budget to $17,500.",
+      timestamp: "2023-12-07T09:45:00",
+      isCounterOffer: true,
+      counterOffer: {
+        budget: "$17,500",
+        timeline: "2.5 months",
+      },
+    },
+  ],
+})
 
 export default function NegotiatePage({
   params,
@@ -32,11 +124,42 @@ export default function NegotiatePage({
   const router = useRouter()
   const { isAuthenticated, user } = useAuth()
   const { toast } = useToast()
+
+  // Use useMemo to prevent recreation of the negotiation object on each render
+  const negotiation = useMemo(() => getMockData(params.id, params.proposalId), [params.id, params.proposalId])
+
   const [isLoading, setIsLoading] = useState(true)
   const [message, setMessage] = useState("")
   const [counterOffer, setCounterOffer] = useState({
     budget: "",
     timeline: "",
+  })
+  const [useMilestones, setUseMilestones] = useState(false)
+  const [milestones, setMilestones] = useState<Milestone[]>([])
+  const [showMilestoneDialog, setShowMilestoneDialog] = useState(false)
+  const [currentMilestone, setCurrentMilestone] = useState<Milestone>({
+    id: "",
+    name: "",
+    description: "",
+    percentage: 0,
+    amount: "",
+    dueDate: "",
+  })
+  const [editingMilestoneId, setEditingMilestoneId] = useState<string | null>(null)
+  const [totalPercentage, setTotalPercentage] = useState(0)
+
+  // Extract the timeline string once to avoid recalculations
+  const currentTimelineStr = useMemo(() => {
+    const lastMessage = negotiation.messages[negotiation.messages.length - 1]
+    return lastMessage.isCounterOffer ? lastMessage.counterOffer.timeline : negotiation.currentProposal.timeline
+  }, [negotiation.messages, negotiation.currentProposal.timeline])
+
+  // Initialize project timeline dates with default values
+  const [projectStartDate, setProjectStartDate] = useState<Date>(() => new Date())
+  const [projectEndDate, setProjectEndDate] = useState<Date>(() => {
+    const endDate = new Date()
+    endDate.setMonth(endDate.getMonth() + 3) // Default 3 months
+    return endDate
   })
 
   // Redirect if not authenticated or not a paid user
@@ -53,75 +176,36 @@ export default function NegotiatePage({
     }
   }, [isAuthenticated, router, user])
 
+  // Calculate total percentage whenever milestones change
+  useEffect(() => {
+    const total = milestones.reduce((sum, milestone) => sum + milestone.percentage, 0)
+    setTotalPercentage(total)
+  }, [milestones])
+
+  // Calculate project timeline based on current proposal - only run once on initial render
+  useEffect(() => {
+    // Set project start date to today
+    const start = new Date()
+
+    // Extract number of months from timeline string (e.g., "3 months" -> 3)
+    const durationMatch = currentTimelineStr.match(/(\d+(\.\d+)?)/)
+    const durationMonths = durationMatch ? Number.parseFloat(durationMatch[1]) : 3
+
+    // Calculate end date
+    const end = new Date(start)
+    end.setMonth(end.getMonth() + Math.floor(durationMonths))
+    // Handle partial months
+    const remainingDays = Math.round((durationMonths % 1) * 30)
+    end.setDate(end.getDate() + remainingDays)
+
+    setProjectStartDate(start)
+    setProjectEndDate(end)
+    // Only run this effect once on component mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   if (!isAuthenticated || user?.accountType !== "paid" || isLoading) {
     return null
-  }
-
-  // Mock data for the negotiation
-  const negotiation = {
-    matchId: params.id,
-    proposalId: params.proposalId,
-    smartjectTitle: "AI-Powered Supply Chain Optimization",
-    provider: {
-      id: "user-101",
-      name: "Tech Solutions Inc.",
-      avatar: "",
-      rating: 4.8,
-    },
-    needer: {
-      id: "user-201",
-      name: "Global Logistics Corp",
-      avatar: "",
-      rating: 4.6,
-    },
-    currentProposal: {
-      budget: "$15,000",
-      timeline: "3 months",
-      scope:
-        "The project will include data integration from existing systems, machine learning model development, dashboard creation, and staff training.",
-      deliverables: [
-        "Data integration framework",
-        "Machine learning prediction model",
-        "Real-time monitoring dashboard",
-        "Documentation and training materials",
-      ],
-    },
-    messages: [
-      {
-        id: "msg-1",
-        sender: "provider",
-        senderName: "Tech Solutions Inc.",
-        content:
-          "Thank you for considering our proposal. We're excited about the possibility of working together on this project.",
-        timestamp: "2023-12-06T10:30:00",
-        isCounterOffer: false,
-      },
-      {
-        id: "msg-2",
-        sender: "needer",
-        senderName: "Global Logistics Corp",
-        content: "We like your approach but we're wondering if the timeline could be shortened to 2.5 months?",
-        timestamp: "2023-12-06T14:15:00",
-        isCounterOffer: true,
-        counterOffer: {
-          budget: "$15,000",
-          timeline: "2.5 months",
-        },
-      },
-      {
-        id: "msg-3",
-        sender: "provider",
-        senderName: "Tech Solutions Inc.",
-        content:
-          "We could potentially shorten the timeline to 2.5 months, but it would require additional resources which would increase the budget to $17,500.",
-        timestamp: "2023-12-07T09:45:00",
-        isCounterOffer: true,
-        counterOffer: {
-          budget: "$17,500",
-          timeline: "2.5 months",
-        },
-      },
-    ],
   }
 
   const handleSendMessage = () => {
@@ -161,6 +245,27 @@ export default function NegotiatePage({
   }
 
   const handleAcceptTerms = () => {
+    // Validate milestones if they're being used
+    if (useMilestones) {
+      if (milestones.length === 0) {
+        toast({
+          title: "No milestones defined",
+          description: "Please add at least one milestone before accepting terms.",
+          variant: "destructive",
+        })
+        return
+      }
+
+      if (totalPercentage !== 100) {
+        toast({
+          title: "Invalid milestone percentages",
+          description: "The total percentage of all milestones must equal 100%.",
+          variant: "destructive",
+        })
+        return
+      }
+    }
+
     // In a real app, we would call an API to accept the terms
     toast({
       title: "Terms accepted",
@@ -169,6 +274,147 @@ export default function NegotiatePage({
 
     // Redirect to the contract page
     router.push(`/matches/${params.id}/contract/${params.proposalId}`)
+  }
+
+  const openAddMilestoneDialog = () => {
+    setEditingMilestoneId(null)
+    setCurrentMilestone({
+      id: Date.now().toString(),
+      name: "",
+      description: "",
+      percentage: 0,
+      amount: "",
+      dueDate: "",
+    })
+    setShowMilestoneDialog(true)
+  }
+
+  const openEditMilestoneDialog = (milestone: Milestone) => {
+    setEditingMilestoneId(milestone.id)
+    setCurrentMilestone({ ...milestone })
+    setShowMilestoneDialog(true)
+  }
+
+  // Calculate suggested due date based on percentage
+  const calculateSuggestedDueDate = (percentage: number): Date => {
+    const projectDuration = projectEndDate.getTime() - projectStartDate.getTime()
+    const daysFromStart = (projectDuration * (percentage / 100)) / (1000 * 60 * 60 * 24)
+
+    const suggestedDate = new Date(projectStartDate)
+    suggestedDate.setDate(suggestedDate.getDate() + Math.round(daysFromStart))
+
+    return suggestedDate
+  }
+
+  const handleSaveMilestone = () => {
+    // Validate milestone data
+    if (!currentMilestone.name.trim()) {
+      toast({
+        title: "Missing information",
+        description: "Please provide a name for the milestone.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (currentMilestone.percentage <= 0) {
+      toast({
+        title: "Invalid percentage",
+        description: "Percentage must be greater than 0.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (!currentMilestone.dueDate) {
+      toast({
+        title: "Missing information",
+        description: "Please provide a due date for the milestone.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Check if adding/updating this milestone would exceed 100%
+    const otherMilestonesTotal = milestones
+      .filter((m) => m.id !== currentMilestone.id)
+      .reduce((sum, m) => sum + m.percentage, 0)
+
+    if (otherMilestonesTotal + currentMilestone.percentage > 100) {
+      toast({
+        title: "Percentage too high",
+        description: "The total percentage of all milestones cannot exceed 100%.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (editingMilestoneId) {
+      // Update existing milestone
+      setMilestones(milestones.map((m) => (m.id === editingMilestoneId ? currentMilestone : m)))
+      toast({
+        title: "Milestone updated",
+        description: "The milestone has been updated successfully.",
+      })
+    } else {
+      // Add new milestone
+      setMilestones([...milestones, currentMilestone])
+      toast({
+        title: "Milestone added",
+        description: "The milestone has been added successfully.",
+      })
+    }
+
+    setShowMilestoneDialog(false)
+  }
+
+  const handleDeleteMilestone = (id: string) => {
+    setMilestones(milestones.filter((m) => m.id !== id))
+    toast({
+      title: "Milestone deleted",
+      description: "The milestone has been deleted successfully.",
+    })
+  }
+
+  const formatCurrency = (value: string) => {
+    // Remove any non-digit characters
+    const numericValue = value.replace(/[^0-9]/g, "")
+
+    // Format as currency
+    if (numericValue) {
+      return `$${Number.parseInt(numericValue).toLocaleString()}`
+    }
+    return ""
+  }
+
+  const handleMilestoneAmountChange = (value: string) => {
+    setCurrentMilestone({
+      ...currentMilestone,
+      amount: formatCurrency(value),
+    })
+  }
+
+  const handleMilestoneDateChange = (date: Date | undefined) => {
+    if (date) {
+      setCurrentMilestone({
+        ...currentMilestone,
+        dueDate: date.toISOString(),
+      })
+    }
+  }
+
+  // Update milestone percentage and suggest a due date
+  const handleMilestonePercentageChange = (percentage: number) => {
+    const newPercentage = Math.max(0, Math.min(100, percentage))
+
+    // Calculate suggested due date based on percentage
+    const suggestedDate = calculateSuggestedDueDate(newPercentage)
+
+    setCurrentMilestone({
+      ...currentMilestone,
+      percentage: newPercentage,
+      dueDate: currentMilestone.dueDate || suggestedDate.toISOString(),
+    })
   }
 
   return (
@@ -318,11 +564,7 @@ export default function NegotiatePage({
                   <div className="flex items-center text-sm text-muted-foreground mb-1">
                     <Calendar className="h-4 w-4 mr-1" /> Timeline
                   </div>
-                  <p className="font-medium">
-                    {negotiation.messages[negotiation.messages.length - 1].isCounterOffer
-                      ? negotiation.messages[negotiation.messages.length - 1].counterOffer.timeline
-                      : negotiation.currentProposal.timeline}
-                  </p>
+                  <p className="font-medium">{currentTimelineStr}</p>
                 </div>
                 <Separator />
                 <div>
@@ -349,6 +591,99 @@ export default function NegotiatePage({
                 Accept Current Terms
               </Button>
             </CardFooter>
+          </Card>
+
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Payment Milestones</CardTitle>
+              <CardDescription>Define payment schedule for the project</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="use-milestones" className="flex items-center gap-2">
+                    <span>Use payment milestones</span>
+                    {useMilestones && totalPercentage !== 100 && (
+                      <span className="text-xs text-red-500 flex items-center">
+                        <AlertCircle className="h-3 w-3 mr-1" />
+                        Total must be 100%
+                      </span>
+                    )}
+                  </Label>
+                  <Switch id="use-milestones" checked={useMilestones} onCheckedChange={setUseMilestones} />
+                </div>
+
+                {useMilestones && (
+                  <>
+                    <div className="border rounded-md p-3 bg-muted/30">
+                      <p className="text-sm">
+                        Define payment milestones to break down the project into manageable phases. Each milestone
+                        should have a percentage of the total budget.
+                      </p>
+                      <div className="mt-2 text-sm flex justify-between">
+                        <span>
+                          Current total: <strong>{totalPercentage}%</strong>
+                        </span>
+                        <span>
+                          Remaining: <strong>{100 - totalPercentage}%</strong>
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Timeline visualization */}
+                    {milestones.length > 0 && (
+                      <div className="border rounded-md p-4">
+                        <h4 className="text-sm font-medium mb-2">Project Timeline</h4>
+                        <MilestoneTimeline
+                          milestones={milestones}
+                          projectStartDate={projectStartDate}
+                          projectEndDate={projectEndDate}
+                        />
+                      </div>
+                    )}
+
+                    {milestones.length > 0 ? (
+                      <div className="space-y-2">
+                        {milestones.map((milestone) => (
+                          <div key={milestone.id} className="border rounded-md p-3 flex justify-between items-start">
+                            <div>
+                              <div className="font-medium">{milestone.name}</div>
+                              <div className="text-sm text-muted-foreground">{milestone.description}</div>
+                              <div className="mt-1 flex gap-3 text-sm">
+                                <span>{milestone.percentage}%</span>
+                                <span>{milestone.amount}</span>
+                                <span>Due: {new Date(milestone.dueDate).toLocaleDateString()}</span>
+                              </div>
+                            </div>
+                            <div className="flex gap-1">
+                              <Button variant="ghost" size="icon" onClick={() => openEditMilestoneDialog(milestone)}>
+                                <FileText className="h-4 w-4" />
+                                <span className="sr-only">Edit</span>
+                              </Button>
+                              <Button variant="ghost" size="icon" onClick={() => handleDeleteMilestone(milestone.id)}>
+                                <Trash2 className="h-4 w-4" />
+                                <span className="sr-only">Delete</span>
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="border border-dashed rounded-md p-6 flex flex-col items-center justify-center text-center text-muted-foreground">
+                        <FileText className="h-8 w-8 mb-2" />
+                        <p>No milestones defined yet</p>
+                        <p className="text-sm">Add milestones to define the payment schedule</p>
+                      </div>
+                    )}
+
+                    <Button variant="outline" className="w-full" onClick={openAddMilestoneDialog}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Milestone
+                    </Button>
+                  </>
+                )}
+              </div>
+            </CardContent>
           </Card>
 
           <Card>
@@ -385,6 +720,122 @@ export default function NegotiatePage({
           </Card>
         </div>
       </div>
+
+      {/* Milestone Dialog */}
+      <Dialog open={showMilestoneDialog} onOpenChange={setShowMilestoneDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingMilestoneId ? "Edit Milestone" : "Add Milestone"}</DialogTitle>
+            <DialogDescription>
+              {editingMilestoneId ? "Update the details of this milestone" : "Define a new milestone for the project"}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="milestone-name">Milestone Name</Label>
+              <Input
+                id="milestone-name"
+                placeholder="e.g., Project Kickoff, MVP Delivery"
+                value={currentMilestone.name}
+                onChange={(e) => setCurrentMilestone({ ...currentMilestone, name: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="milestone-description">Description</Label>
+              <Textarea
+                id="milestone-description"
+                placeholder="Describe what will be delivered in this milestone"
+                value={currentMilestone.description}
+                onChange={(e) => setCurrentMilestone({ ...currentMilestone, description: e.target.value })}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="milestone-percentage">Percentage (%)</Label>
+                <Input
+                  id="milestone-percentage"
+                  type="number"
+                  min="1"
+                  max="100"
+                  placeholder="e.g., 25"
+                  value={currentMilestone.percentage || ""}
+                  onChange={(e) => handleMilestonePercentageChange(Number.parseInt(e.target.value) || 0)}
+                />
+                <p className="text-xs text-muted-foreground">Percentage of total budget</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="milestone-amount">Amount</Label>
+                <Input
+                  id="milestone-amount"
+                  placeholder="e.g., $5,000"
+                  value={currentMilestone.amount}
+                  onChange={(e) => handleMilestoneAmountChange(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">Payment amount for this milestone</p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="milestone-due-date">Due Date</Label>
+              <DatePicker
+                date={currentMilestone.dueDate ? new Date(currentMilestone.dueDate) : undefined}
+                onSelect={handleMilestoneDateChange}
+              />
+
+              {/* Timeline position indicator */}
+              {currentMilestone.dueDate && (
+                <div className="mt-2 pt-2 border-t">
+                  <p className="text-xs text-muted-foreground mb-1">Position in project timeline:</p>
+                  <div className="relative h-1 bg-muted rounded-full">
+                    {/* Project progress indicator */}
+                    <div className="absolute top-0 left-0 h-1 bg-primary/30 rounded-l-full" style={{ width: "100%" }} />
+
+                    {/* Milestone position */}
+                    {(() => {
+                      const milestoneDate = new Date(currentMilestone.dueDate)
+                      const position = Math.max(
+                        0,
+                        Math.min(
+                          ((milestoneDate.getTime() - projectStartDate.getTime()) /
+                            (projectEndDate.getTime() - projectStartDate.getTime())) *
+                            100,
+                          100,
+                        ),
+                      )
+
+                      return (
+                        <div
+                          className="absolute top-0 w-2 h-2 bg-primary rounded-full -translate-x-1 -translate-y-0.5"
+                          style={{ left: `${position}%` }}
+                        />
+                      )
+                    })()}
+                  </div>
+                  <div className="flex justify-between mt-1 text-xs text-muted-foreground">
+                    <span>Start</span>
+                    <span>End</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowMilestoneDialog(false)}>
+              <X className="h-4 w-4 mr-2" />
+              Cancel
+            </Button>
+            <Button onClick={handleSaveMilestone}>
+              <Check className="h-4 w-4 mr-2" />
+              {editingMilestoneId ? "Update Milestone" : "Add Milestone"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
