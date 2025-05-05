@@ -505,17 +505,21 @@ export default function SmartjectDetailPage({ params }: { params: { id: string }
                   ? "Create a detailed proposal specifying how you can implement this smartject or what your requirements are."
                   : "Paid accounts can create detailed proposals for smartjects they need or can provide."}
               </p>
-              <Button
-                className="w-full"
-                disabled={!isAuthenticated || user?.accountType !== "paid"}
-                onClick={() => {
-                  if (isAuthenticated && user?.accountType === "paid") {
-                    router.push(`/proposals/create?smartjectId=${params.id}`)
-                  }
-                }}
-              >
-                {user?.accountType === "paid" ? "Create Proposal" : "Upgrade to Paid Account"}
-              </Button>
+              {isAuthenticated && user?.accountType === "paid" ? (
+                <Button className="w-full" onClick={() => router.push(`/proposals/create?smartjectId=${params.id}`)}>
+                  Create Proposal
+                </Button>
+              ) : (
+                <Button
+                  className="w-full"
+                  asChild
+                  disabled={!isAuthenticated} // Only disable if not authenticated
+                >
+                  <Link href={isAuthenticated ? "/upgrade" : "/auth/login"}>
+                    {isAuthenticated ? "Upgrade to Paid Account" : "Log In to Create Proposal"}
+                  </Link>
+                </Button>
+              )}
             </CardContent>
           </Card>
 

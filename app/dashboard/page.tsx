@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { SmartjectCard } from "@/components/smartject-card"
 import { useAuth } from "@/components/auth-provider"
@@ -64,6 +64,8 @@ export default function DashboardPage() {
       matchedDate: "2023-12-05",
       proposals: 3,
       type: "need",
+      // Added proposal IDs for direct navigation
+      proposalIds: ["proposal-1", "proposal-2", "proposal-3"],
     },
     {
       id: "match-3",
@@ -72,6 +74,8 @@ export default function DashboardPage() {
       matchedDate: "2023-11-28",
       proposals: 1,
       type: "provide",
+      // Added proposal IDs for direct navigation
+      proposalIds: ["proposal-4"],
     },
   ]
 
@@ -186,7 +190,7 @@ export default function DashboardPage() {
               {recentProposals.map((proposal) => (
                 <Card
                   key={proposal.id}
-                  className="cursor-pointer hover:bg-muted/50 transition-colors"
+                  className="hover:bg-muted/50 transition-colors cursor-pointer"
                   onClick={() => router.push(`/proposals/${proposal.id}`)}
                 >
                   <CardHeader className="pb-2">
@@ -230,11 +234,7 @@ export default function DashboardPage() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {recentMatches.map((match) => (
-                <Card
-                  key={match.id}
-                  className="cursor-pointer hover:bg-muted/50 transition-colors"
-                  onClick={() => router.push(`/matches/${match.id}`)}
-                >
+                <Card key={match.id} className="hover:bg-muted/50 transition-colors">
                   <CardHeader className="pb-2">
                     <div className="flex justify-between items-start">
                       <div>
@@ -255,6 +255,34 @@ export default function DashboardPage() {
                       </span>
                     </div>
                   </CardContent>
+                  <CardFooter className="flex gap-2">
+                    {match.status === "contract_ready" ? (
+                      <Button
+                        variant="default"
+                        className="w-full"
+                        onClick={() => router.push(`/matches/${match.id}/contract/${match.proposalIds[0]}`)}
+                      >
+                        View Contract
+                      </Button>
+                    ) : (
+                      <>
+                        <Button
+                          variant="outline"
+                          className="flex-1"
+                          onClick={() => router.push(`/proposals/${match.proposalIds[0]}`)}
+                        >
+                          View Proposal
+                        </Button>
+                        <Button
+                          variant="default"
+                          className="flex-1"
+                          onClick={() => router.push(`/matches/${match.id}/negotiate/${match.proposalIds[0]}`)}
+                        >
+                          Negotiate
+                        </Button>
+                      </>
+                    )}
+                  </CardFooter>
                 </Card>
               ))}
               {recentMatches.length === 0 && (
@@ -280,7 +308,7 @@ export default function DashboardPage() {
               {activeContracts.map((contract) => (
                 <Card
                   key={contract.id}
-                  className="cursor-pointer hover:bg-muted/50 transition-colors"
+                  className="hover:bg-muted/50 transition-colors cursor-pointer"
                   onClick={() => router.push(`/contracts/${contract.id}`)}
                 >
                   <CardHeader className="pb-2">

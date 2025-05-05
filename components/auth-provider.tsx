@@ -18,6 +18,7 @@ type AuthContextType = {
   login: (email: string, password: string) => Promise<void>
   register: (name: string, email: string, password: string) => Promise<void>
   logout: () => void
+  upgradeAccount: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -100,6 +101,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("smartjects-user", JSON.stringify(mockUser))
   }
 
+  const upgradeAccount = async () => {
+    // In a real app, this would call an API to process payment and upgrade the account
+    // For demo purposes, we'll simulate a successful upgrade
+    if (user) {
+      const upgradedUser: UserType = {
+        ...user,
+        accountType: "paid",
+      }
+
+      setUser(upgradedUser)
+      localStorage.setItem("smartjects-user", JSON.stringify(upgradedUser))
+
+      // Simulate API delay
+      return new Promise<void>((resolve) => setTimeout(resolve, 1500))
+    }
+
+    return Promise.reject(new Error("User not authenticated"))
+  }
+
   const logout = () => {
     setUser(null)
     setIsAuthenticated(false)
@@ -110,7 +130,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, login, register, logout }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ user, isAuthenticated, login, register, logout, upgradeAccount }}>
+      {children}
+    </AuthContext.Provider>
   )
 }
 
