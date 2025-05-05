@@ -4,7 +4,7 @@ import Link from "next/link"
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, Heart, Briefcase, Wrench, MessageSquare, Share2, Calendar, DollarSign } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -20,8 +20,18 @@ export default function SmartjectDetailPage({ params }: { params: { id: string }
   const router = useRouter()
   const { isAuthenticated, user } = useAuth()
   const [comment, setComment] = useState("")
-  // Remove this line as it might be causing issues
-  // const [activeTab, setActiveTab] = useState("details")
+
+  const commentsRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    // Check if the URL has a hash fragment
+    if (typeof window !== "undefined" && window.location.hash === "#comments") {
+      // Scroll to the comments section
+      setTimeout(() => {
+        commentsRef.current?.scrollIntoView({ behavior: "smooth" })
+      }, 500) // Small delay to ensure the page is fully loaded
+    }
+  }, [])
 
   // In a real app, we would fetch the smartject from an API
   const smartject = mockSmartjects.find((s) => s.id === params.id) || mockSmartjects[0]
@@ -346,7 +356,8 @@ export default function SmartjectDetailPage({ params }: { params: { id: string }
               <div className="flex gap-2">
                 <Button
                   disabled={!isAuthenticated}
-                  variant="outline" size="sm"
+                  variant="outline"
+                  size="sm"
                   className="flex gap-2"
                   onClick={() => handleVote("believe")}
                 >
@@ -393,7 +404,7 @@ export default function SmartjectDetailPage({ params }: { params: { id: string }
               <TabsTrigger value="research">Research Papers</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="comments">
+            <TabsContent value="comments" ref={commentsRef}>
               <Card>
                 <CardHeader>
                   <CardTitle>Discussion</CardTitle>

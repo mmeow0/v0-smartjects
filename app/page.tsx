@@ -9,6 +9,17 @@ import { NewsletterSignup } from "@/components/newsletter-signup"
 import { mockSmartjects } from "@/lib/mock-data"
 
 export default function Home() {
+  // Sort smartjects for different tabs
+  const recentSmartjects = [...mockSmartjects]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 6)
+
+  const mostNeededSmartjects = [...mockSmartjects].sort((a, b) => b.votes.need - a.votes.need).slice(0, 6)
+
+  const mostProvidedSmartjects = [...mockSmartjects].sort((a, b) => b.votes.provide - a.votes.provide).slice(0, 6)
+
+  const mostBelievedSmartjects = [...mockSmartjects].sort((a, b) => b.votes.believe - a.votes.believe).slice(0, 6)
+
   return (
     <div className="container mx-auto px-4 py-6">
       <HeroSection />
@@ -21,42 +32,63 @@ export default function Home() {
           <SearchBar />
         </div>
 
-        <Tabs defaultValue="trending">
+        <Tabs defaultValue="recent">
           <TabsList className="mb-6">
-            <TabsTrigger value="trending">Trending</TabsTrigger>
             <TabsTrigger value="recent">Recent</TabsTrigger>
-            <TabsTrigger value="popular">Most Voted</TabsTrigger>
+            <TabsTrigger value="most-needed">Most Needed</TabsTrigger>
+            <TabsTrigger value="most-provided">Most Provided</TabsTrigger>
+            <TabsTrigger value="most-believed">Most Believed</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="trending" className="space-y-4">
+          <TabsContent value="recent" className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {mockSmartjects.slice(0, 6).map((smartject) => (
+              {recentSmartjects.map((smartject) => (
                 <SmartjectCard key={smartject.id} smartject={smartject} />
               ))}
             </div>
             <div className="flex justify-center mt-8">
-              <Button variant="outline" size="lg">
-                View More Smartjects
+              <Button variant="outline" size="lg" asChild>
+                <a href="/hub">View More Smartjects</a>
               </Button>
             </div>
           </TabsContent>
 
-          <TabsContent value="recent" className="space-y-4">
+          <TabsContent value="most-needed" className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {mockSmartjects.slice(3, 9).map((smartject) => (
+              {mostNeededSmartjects.map((smartject) => (
                 <SmartjectCard key={smartject.id} smartject={smartject} />
               ))}
             </div>
+            <div className="flex justify-center mt-8">
+              <Button variant="outline" size="lg" asChild>
+                <a href="/hub">View More Smartjects</a>
+              </Button>
+            </div>
           </TabsContent>
 
-          <TabsContent value="popular" className="space-y-4">
+          <TabsContent value="most-provided" className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...mockSmartjects]
-                .sort((a, b) => b.votes.believe - a.votes.believe)
-                .slice(0, 6)
-                .map((smartject) => (
-                  <SmartjectCard key={smartject.id} smartject={smartject} />
-                ))}
+              {mostProvidedSmartjects.map((smartject) => (
+                <SmartjectCard key={smartject.id} smartject={smartject} />
+              ))}
+            </div>
+            <div className="flex justify-center mt-8">
+              <Button variant="outline" size="lg" asChild>
+                <a href="/hub">View More Smartjects</a>
+              </Button>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="most-believed" className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {mostBelievedSmartjects.map((smartject) => (
+                <SmartjectCard key={smartject.id} smartject={smartject} />
+              ))}
+            </div>
+            <div className="flex justify-center mt-8">
+              <Button variant="outline" size="lg" asChild>
+                <a href="/hub">View More Smartjects</a>
+              </Button>
             </div>
           </TabsContent>
         </Tabs>

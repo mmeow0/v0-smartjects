@@ -58,7 +58,8 @@ export function SmartjectCard({ smartject }: SmartjectCardProps) {
               <TooltipTrigger asChild>
                 <Button
                   disabled={!isAuthenticated}
-                  variant="ghost" size="sm"
+                  variant="ghost"
+                  size="sm"
                   className="flex gap-2"
                   onClick={() => handleVote("believe")}
                 >
@@ -115,7 +116,15 @@ export function SmartjectCard({ smartject }: SmartjectCardProps) {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="sm" className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="flex gap-2"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    router.push(`/smartject/${smartject.id}#comments`)
+                  }}
+                >
                   <MessageSquare className="h-4 w-4" />
                   <span>{smartject.comments}</span>
                 </Button>

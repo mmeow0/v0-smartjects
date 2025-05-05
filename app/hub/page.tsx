@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SmartjectCard } from "@/components/smartject-card"
 import { mockSmartjects } from "@/lib/mock-data"
 
-// Варианты фильтрации
+// Filter options
 const industries = ["Supply Chain", "Manufacturing", "Finance", "Customer Support"]
 const technologies = ["AI", "ML", "NLP", "IoT"]
 const functions = ["Forecasting", "Optimization", "Automation"]
@@ -27,42 +27,41 @@ export default function SmartjectsHubPage() {
     }
   }
 
-const filteredSmartjects = mockSmartjects.filter((s) => {
-  const matchesQuery =
-    s.title?.toLowerCase().includes(query.toLowerCase()) ||
-    s.description?.toLowerCase().includes(query.toLowerCase())
+  const filteredSmartjects = mockSmartjects.filter((s) => {
+    const matchesQuery =
+      s.title?.toLowerCase().includes(query.toLowerCase()) || s.description?.toLowerCase().includes(query.toLowerCase())
 
-  const matchesIndustries =
-    selectedIndustries.length === 0 ||
-    selectedIndustries.some((i) => s.industries?.includes(i))
+    const matchesIndustries =
+      selectedIndustries.length === 0 || selectedIndustries.some((i) => s.industries?.includes(i))
 
-  const matchesTechnologies =
-    selectedTechnologies.length === 0 ||
-    selectedTechnologies.some((t) => s.technologies?.includes(t))
+    const matchesTechnologies =
+      selectedTechnologies.length === 0 || selectedTechnologies.some((t) => s.technologies?.includes(t))
 
-  const matchesFunctions =
-    selectedFunctions.length === 0 ||
-    selectedFunctions.some((f) => s.functions?.includes(f))
+    const matchesFunctions = selectedFunctions.length === 0 || selectedFunctions.some((f) => s.functions?.includes(f))
 
-  return matchesQuery && matchesIndustries && matchesTechnologies && matchesFunctions
-})
+    return matchesQuery && matchesIndustries && matchesTechnologies && matchesFunctions
+  })
 
+  // Sort smartjects for different tabs
+  const recentSmartjects = [...filteredSmartjects].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  )
+
+  const mostNeededSmartjects = [...filteredSmartjects].sort((a, b) => b.votes.need - a.votes.need)
+
+  const mostProvidedSmartjects = [...filteredSmartjects].sort((a, b) => b.votes.provide - a.votes.provide)
+
+  const mostBelievedSmartjects = [...filteredSmartjects].sort((a, b) => b.votes.believe - a.votes.believe)
 
   return (
     <div className="container mx-auto px-4 py-6">
       <div className="mb-8">
         <h1 className="text-3xl font-bold">Smartjects Hub</h1>
-        <p className="text-muted-foreground mb-4">
-          Explore all available AI implementation projects
-        </p>
+        <p className="text-muted-foreground mb-4">Explore all available AI implementation projects</p>
 
         {/* 🔍 Unified Search */}
         <Card className="p-6 space-y-4 bg-muted/50">
-          <Input
-            placeholder="Search smartjects..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
+          <Input placeholder="Search smartjects..." value={query} onChange={(e) => setQuery(e.target.value)} />
 
           <div className="grid md:grid-cols-3 gap-4">
             <div>
@@ -73,9 +72,7 @@ const filteredSmartjects = mockSmartjects.filter((s) => {
                     key={industry}
                     variant={selectedIndustries.includes(industry) ? "default" : "outline"}
                     size="sm"
-                    onClick={() =>
-                      handleToggle(industry, selectedIndustries, setSelectedIndustries)
-                    }
+                    onClick={() => handleToggle(industry, selectedIndustries, setSelectedIndustries)}
                   >
                     {industry}
                   </Button>
@@ -91,9 +88,7 @@ const filteredSmartjects = mockSmartjects.filter((s) => {
                     key={tech}
                     variant={selectedTechnologies.includes(tech) ? "default" : "outline"}
                     size="sm"
-                    onClick={() =>
-                      handleToggle(tech, selectedTechnologies, setSelectedTechnologies)
-                    }
+                    onClick={() => handleToggle(tech, selectedTechnologies, setSelectedTechnologies)}
                   >
                     {tech}
                   </Button>
@@ -120,46 +115,43 @@ const filteredSmartjects = mockSmartjects.filter((s) => {
         </Card>
       </div>
 
-      <Tabs defaultValue="all">
+      <Tabs defaultValue="recent">
         <TabsList className="mb-6">
-          <TabsTrigger value="all">All Smartjects</TabsTrigger>
-          <TabsTrigger value="trending">Trending</TabsTrigger>
           <TabsTrigger value="recent">Recent</TabsTrigger>
-          <TabsTrigger value="popular">Most Voted</TabsTrigger>
+          <TabsTrigger value="most-needed">Most Needed</TabsTrigger>
+          <TabsTrigger value="most-provided">Most Provided</TabsTrigger>
+          <TabsTrigger value="most-believed">Most Believed</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="all" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredSmartjects.map((smartject) => (
-              <SmartjectCard key={smartject.id} smartject={smartject} />
-            ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="trending" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {mockSmartjects.slice(0, 6).map((smartject) => (
-              <SmartjectCard key={smartject.id} smartject={smartject} />
-            ))}
-          </div>
-        </TabsContent>
 
         <TabsContent value="recent" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {mockSmartjects.slice(3, 9).map((smartject) => (
+            {recentSmartjects.map((smartject) => (
               <SmartjectCard key={smartject.id} smartject={smartject} />
             ))}
           </div>
         </TabsContent>
 
-        <TabsContent value="popular" className="space-y-4">
+        <TabsContent value="most-needed" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...mockSmartjects]
-              .sort((a, b) => b.votes.believe - a.votes.believe)
-              .slice(0, 6)
-              .map((smartject) => (
-                <SmartjectCard key={smartject.id} smartject={smartject} />
-              ))}
+            {mostNeededSmartjects.map((smartject) => (
+              <SmartjectCard key={smartject.id} smartject={smartject} />
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="most-provided" className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {mostProvidedSmartjects.map((smartject) => (
+              <SmartjectCard key={smartject.id} smartject={smartject} />
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="most-believed" className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {mostBelievedSmartjects.map((smartject) => (
+              <SmartjectCard key={smartject.id} smartject={smartject} />
+            ))}
           </div>
         </TabsContent>
       </Tabs>
