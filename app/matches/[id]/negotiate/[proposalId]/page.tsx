@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useMemo } from "react"
+import { useEffect, useState, useMemo, use } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -130,14 +130,16 @@ const getMockData = (matchId: string, proposalId: string) => ({
 export default function NegotiatePage({
   params,
 }: {
-  params: { id: string; proposalId: string }
+  params: Promise<{ id: string; proposalId: string }>
 }) {
+  const { id, proposalId } = use(params);
+
   const router = useRouter()
   const { isAuthenticated, user } = useAuth()
   const { toast } = useToast()
 
   // Use useMemo to prevent recreation of the negotiation object on each render
-  const negotiation = useMemo(() => getMockData(params.id, params.proposalId), [params.id, params.proposalId])
+  const negotiation = useMemo(() => getMockData(id, proposalId), [id, proposalId])
 
   const [isLoading, setIsLoading] = useState(true)
   const [message, setMessage] = useState("")
@@ -164,7 +166,7 @@ export default function NegotiatePage({
   // Extract the timeline string once to avoid recalculations
   const currentTimelineStr = useMemo(() => {
     const lastMessage = negotiation.messages[negotiation.messages.length - 1]
-    return lastMessage.isCounterOffer ? lastMessage.counterOffer.timeline : negotiation.currentProposal.timeline
+    return lastMessage.isCounterOffer ? lastMessage.counterOffer?.timeline : negotiation.currentProposal.timeline
   }, [negotiation.messages, negotiation.currentProposal.timeline])
 
   // Initialize project timeline dates with default values
@@ -201,7 +203,7 @@ export default function NegotiatePage({
     const start = new Date()
 
     // Extract number of months from timeline string (e.g., "3 months" -> 3)
-    const durationMatch = currentTimelineStr.match(/(\d+(\.\d+)?)/)
+    const durationMatch = currentTimelineStr?.match(/(\d+(\.\d+)?)/)
     const durationMonths = durationMatch ? Number.parseFloat(durationMatch[1]) : 3
 
     // Calculate end date
@@ -286,7 +288,7 @@ export default function NegotiatePage({
     })
 
     // Redirect to the contract page
-    router.push(`/matches/${params.id}/contract/${params.proposalId}`)
+    router.push(`/matches/${id}/contract/${proposalId}`)
   }
 
   const openAddMilestoneDialog = () => {
@@ -524,11 +526,11 @@ export default function NegotiatePage({
                               <div className="grid grid-cols-2 gap-2">
                                 <div>
                                   <span className="text-xs opacity-70">Budget:</span>
-                                  <p className="text-sm font-medium">{msg.counterOffer.budget}</p>
+                                  <p className="text-sm font-medium">{msg.counterOffer?.budget ?? ''}</p>
                                 </div>
                                 <div>
                                   <span className="text-xs opacity-70">Timeline:</span>
-                                  <p className="text-sm font-medium">{msg.counterOffer.timeline}</p>
+                                  <p className="text-sm font-medium">{msg.counterOffer?.timeline ?? ''}</p>
                                 </div>
                               </div>
                             </div>
@@ -606,7 +608,7 @@ export default function NegotiatePage({
                   </div>
                   <p className="font-medium">
                     {negotiation.messages[negotiation.messages.length - 1].isCounterOffer
-                      ? negotiation.messages[negotiation.messages.length - 1].counterOffer.budget
+                      ? negotiation.messages[negotiation.messages.length - 1].counterOffer?.budget
                       : negotiation.currentProposal.budget}
                   </p>
                 </div>
