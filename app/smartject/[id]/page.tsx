@@ -2,9 +2,7 @@
 
 import Link from "next/link"
 
-import type React from "react"
-
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, use, FormEvent } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, Heart, Briefcase, Wrench, MessageSquare, Share2, Calendar, DollarSign } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -16,7 +14,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAuth } from "@/components/auth-provider"
 import { mockSmartjects } from "@/lib/mock-data"
 
-export default function SmartjectDetailPage({ params }: { params: { id: string } }) {
+export default function SmartjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const router = useRouter()
   const { isAuthenticated, user } = useAuth()
   const [comment, setComment] = useState("")
@@ -34,7 +33,7 @@ export default function SmartjectDetailPage({ params }: { params: { id: string }
   }, [])
 
   // In a real app, we would fetch the smartject from an API
-  const smartject = mockSmartjects.find((s) => s.id === params.id) || mockSmartjects[0]
+  const smartject = mockSmartjects.find((s) => s.id === id) || mockSmartjects[0]
 
   // Mock proposals data
   const needProposals = [
@@ -97,7 +96,7 @@ export default function SmartjectDetailPage({ params }: { params: { id: string }
     console.log(`Voted ${type} for smartject ${smartject.id}`)
   }
 
-  const handleSubmitComment = (e: React.FormEvent) => {
+  const handleSubmitComment = (e: FormEvent) => {
     e.preventDefault()
     // In a real app, this would call an API
     console.log(`Submitted comment: ${comment}`)
@@ -506,7 +505,7 @@ export default function SmartjectDetailPage({ params }: { params: { id: string }
                   : "Paid accounts can create detailed proposals for smartjects they need or can provide."}
               </p>
               {isAuthenticated && user?.accountType === "paid" ? (
-                <Button className="w-full" onClick={() => router.push(`/proposals/create?smartjectId=${params.id}`)}>
+                <Button className="w-full" onClick={() => router.push(`/proposals/create?smartjectId=${id}`)}>
                   Create Proposal
                 </Button>
               ) : (
