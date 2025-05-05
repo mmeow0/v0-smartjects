@@ -26,6 +26,9 @@ import {
   ThumbsUp,
   Trash2,
   X,
+  CheckCircle2,
+  Circle,
+  ListChecks,
 } from "lucide-react"
 import {
   Dialog,
@@ -37,9 +40,16 @@ import {
 } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
 import { DatePicker } from "@/components/ui/date-picker"
-import { MilestoneTimeline } from "@/components/milestone-timeline"
+import { Badge } from "@/components/ui/badge"
 
-// Define milestone type
+// Define deliverable type
+interface Deliverable {
+  id: string
+  description: string
+  completed: boolean
+}
+
+// Update milestone type to include deliverables
 interface Milestone {
   id: string
   name: string
@@ -47,6 +57,7 @@ interface Milestone {
   percentage: number
   amount: string
   dueDate: string
+  deliverables: Deliverable[]
 }
 
 // Define mock data outside the component to prevent recreation on each render
@@ -144,9 +155,11 @@ export default function NegotiatePage({
     percentage: 0,
     amount: "",
     dueDate: "",
+    deliverables: [],
   })
   const [editingMilestoneId, setEditingMilestoneId] = useState<string | null>(null)
   const [totalPercentage, setTotalPercentage] = useState(0)
+  const [newDeliverable, setNewDeliverable] = useState("")
 
   // Extract the timeline string once to avoid recalculations
   const currentTimelineStr = useMemo(() => {
@@ -285,13 +298,16 @@ export default function NegotiatePage({
       percentage: 0,
       amount: "",
       dueDate: "",
+      deliverables: [],
     })
+    setNewDeliverable("")
     setShowMilestoneDialog(true)
   }
 
   const openEditMilestoneDialog = (milestone: Milestone) => {
     setEditingMilestoneId(milestone.id)
     setCurrentMilestone({ ...milestone })
+    setNewDeliverable("")
     setShowMilestoneDialog(true)
   }
 
@@ -414,6 +430,40 @@ export default function NegotiatePage({
       ...currentMilestone,
       percentage: newPercentage,
       dueDate: currentMilestone.dueDate || suggestedDate.toISOString(),
+    })
+  }
+
+  // Add a new deliverable to the current milestone
+  const handleAddDeliverable = () => {
+    if (!newDeliverable.trim()) return
+
+    const newDeliverableItem: Deliverable = {
+      id: Date.now().toString(),
+      description: newDeliverable.trim(),
+      completed: false,
+    }
+
+    setCurrentMilestone({
+      ...currentMilestone,
+      deliverables: [...currentMilestone.deliverables, newDeliverableItem],
+    })
+
+    setNewDeliverable("")
+  }
+
+  // Remove a deliverable from the current milestone
+  const handleRemoveDeliverable = (id: string) => {
+    setCurrentMilestone({
+      ...currentMilestone,
+      deliverables: currentMilestone.deliverables.filter((d) => d.id !== id),
+    })
+  }
+
+  // Toggle the completed status of a deliverable
+  const handleToggleDeliverable = (id: string) => {
+    setCurrentMilestone({
+      ...currentMilestone,
+      deliverables: currentMilestone.deliverables.map((d) => (d.id === id ? { ...d, completed: !d.completed } : d)),
     })
   }
 
@@ -630,23 +680,11 @@ export default function NegotiatePage({
                       </div>
                     </div>
 
-                    {/* Timeline visualization */}
-                    {milestones.length > 0 && (
-                      <div className="border rounded-md p-4">
-                        <h4 className="text-sm font-medium mb-2">Project Timeline</h4>
-                        <MilestoneTimeline
-                          milestones={milestones}
-                          projectStartDate={projectStartDate}
-                          projectEndDate={projectEndDate}
-                        />
-                      </div>
-                    )}
-
                     {milestones.length > 0 ? (
                       <div className="space-y-2">
                         {milestones.map((milestone) => (
                           <div key={milestone.id} className="border rounded-md p-3 flex justify-between items-start">
-                            <div>
+                            <div className="w-full">
                               <div className="font-medium">{milestone.name}</div>
                               <div className="text-sm text-muted-foreground">{milestone.description}</div>
                               <div className="mt-1 flex gap-3 text-sm">
@@ -654,8 +692,31 @@ export default function NegotiatePage({
                                 <span>{milestone.amount}</span>
                                 <span>Due: {new Date(milestone.dueDate).toLocaleDateString()}</span>
                               </div>
+
+                              {/* Display deliverables if any */}
+                              {milestone.deliverables && milestone.deliverables.length > 0 && (
+                                <div className="mt-2 pt-2 border-t">
+                                  <div className="flex items-center text-xs text-muted-foreground mb-1">
+                                    <ListChecks className="h-3 w-3 mr-1" /> Deliverables
+                                  </div>
+                                  <ul className="text-sm space-y-1 mt-1">
+                                    {milestone.deliverables.map((deliverable) => (
+                                      <li key={deliverable.id} className="flex items-start gap-2">
+                                        <span className="mt-0.5">
+                                          {deliverable.completed ? (
+                                            <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                          ) : (
+                                            <Circle className="h-4 w-4 text-muted-foreground" />
+                                          )}
+                                        </span>
+                                        <span className="flex-1">{deliverable.description}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
                             </div>
-                            <div className="flex gap-1">
+                            <div className="flex gap-1 ml-2">
                               <Button variant="ghost" size="icon" onClick={() => openEditMilestoneDialog(milestone)}>
                                 <FileText className="h-4 w-4" />
                                 <span className="sr-only">Edit</span>
@@ -723,7 +784,7 @@ export default function NegotiatePage({
 
       {/* Milestone Dialog */}
       <Dialog open={showMilestoneDialog} onOpenChange={setShowMilestoneDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{editingMilestoneId ? "Edit Milestone" : "Add Milestone"}</DialogTitle>
             <DialogDescription>
@@ -821,6 +882,75 @@ export default function NegotiatePage({
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Deliverables Section */}
+            <div className="space-y-2 pt-2 border-t">
+              <Label className="flex items-center gap-2">
+                <ListChecks className="h-4 w-4" /> Deliverables
+                <Badge variant="outline" className="ml-2">
+                  {currentMilestone.deliverables.length}
+                </Badge>
+              </Label>
+
+              {currentMilestone.deliverables.length > 0 ? (
+                <div className="border rounded-md p-2 space-y-2 max-h-[200px] overflow-y-auto">
+                  {currentMilestone.deliverables.map((deliverable) => (
+                    <div key={deliverable.id} className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => handleToggleDeliverable(deliverable.id)}
+                      >
+                        {deliverable.completed ? (
+                          <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <Circle className="h-4 w-4" />
+                        )}
+                        <span className="sr-only">Toggle completion</span>
+                      </Button>
+                      <span className="flex-1 text-sm">{deliverable.description}</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-destructive"
+                        onClick={() => handleRemoveDeliverable(deliverable.id)}
+                      >
+                        <X className="h-4 w-4" />
+                        <span className="sr-only">Remove</span>
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="border border-dashed rounded-md p-4 text-center text-muted-foreground">
+                  <p className="text-sm">No deliverables added yet</p>
+                </div>
+              )}
+
+              <div className="flex gap-2 mt-2">
+                <Input
+                  placeholder="Add a deliverable item..."
+                  value={newDeliverable}
+                  onChange={(e) => setNewDeliverable(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && newDeliverable.trim()) {
+                      e.preventDefault()
+                      handleAddDeliverable()
+                    }
+                  }}
+                />
+                <Button type="button" size="sm" onClick={handleAddDeliverable} disabled={!newDeliverable.trim()}>
+                  <Plus className="h-4 w-4" />
+                  <span className="sr-only">Add</span>
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Add specific items that will be delivered as part of this milestone
+              </p>
             </div>
           </div>
 
