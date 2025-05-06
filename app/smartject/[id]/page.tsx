@@ -1,16 +1,36 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 
 import { useState, useEffect, useRef, use, FormEvent } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Heart, Briefcase, Wrench, MessageSquare, Share2, Calendar, DollarSign } from "lucide-react"
+import {
+  ArrowLeft,
+  Heart,
+  Briefcase,
+  Wrench,
+  MessageSquare,
+  Share2,
+  Calendar,
+  DollarSign,
+  Target,
+  Users,
+  Lightbulb,
+  Cpu,
+  Zap,
+  Building,
+  Factory,
+  BriefcaseIcon,
+  LinkIcon,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Separator } from "@/components/ui/separator"
 import { useAuth } from "@/components/auth-provider"
 import { mockSmartjects } from "@/lib/mock-data"
 
@@ -170,7 +190,7 @@ export default function SmartjectDetailPage({ params }: { params: Promise<{ id: 
           <Card>
             <CardHeader>
               <div className="flex flex-wrap gap-2 mb-2">
-                {smartject.tags.map((tag, index) => (
+                {smartject.businessFunctions.map((tag, index) => (
                   <Badge key={index} variant="outline">
                     {tag}
                   </Badge>
@@ -180,7 +200,19 @@ export default function SmartjectDetailPage({ params }: { params: Promise<{ id: 
               <CardDescription>Created on {new Date(smartject.createdAt).toLocaleDateString()}</CardDescription>
             </CardHeader>
             <CardContent>
-              {/* Replace with a fixed default value in the Tabs component */}
+              {/* Featured Image */}
+              {smartject.image && (
+                <div className="mb-6 relative h-64 w-full overflow-hidden rounded-md">
+                  <Image
+                    src={smartject.image || "/placeholder.svg"}
+                    alt={smartject.title}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+              )}
+
+              {/* Tabs for different content sections */}
               <Tabs defaultValue="details" className="w-full">
                 <TabsList className="w-full mb-6">
                   <TabsTrigger value="details" className="flex-1">
@@ -195,34 +227,153 @@ export default function SmartjectDetailPage({ params }: { params: Promise<{ id: 
                 </TabsList>
 
                 <TabsContent value="details">
-                  <div className="prose max-w-none">
-                    <h3>Problem Statement</h3>
-                    <p>{smartject.description}</p>
+                  <div className="space-y-6">
+                    {/* Mission */}
+                    <div>
+                      <h3 className="text-lg font-semibold flex items-center gap-2 mb-2">
+                        <Target className="h-5 w-5 text-primary" />
+                        Mission
+                      </h3>
+                      <p className="text-muted-foreground">{smartject.mission}</p>
+                    </div>
 
-                    <h3>Solution Overview</h3>
-                    <p>
-                      This smartject proposes an implementation of advanced AI algorithms to address the described
-                      problem. The solution leverages state-of-the-art machine learning techniques to provide accurate
-                      predictions and actionable insights.
-                    </p>
+                    <Separator />
 
-                    <h3>Technical Architecture</h3>
-                    <p>The proposed technical architecture includes:</p>
-                    <ul>
-                      <li>Data collection and preprocessing pipeline</li>
-                      <li>Machine learning model training infrastructure</li>
-                      <li>Real-time prediction API</li>
-                      <li>User-friendly dashboard for monitoring and analysis</li>
-                    </ul>
+                    {/* Problem it Solves */}
+                    <div>
+                      <h3 className="text-lg font-semibold flex items-center gap-2 mb-2">
+                        <Lightbulb className="h-5 w-5 text-amber-500" />
+                        Problem it Solves
+                      </h3>
+                      <p className="text-muted-foreground">{smartject.problematics}</p>
+                    </div>
 
-                    <h3>Business Impact</h3>
-                    <p>Implementation of this smartject can lead to:</p>
-                    <ul>
-                      <li>Increased operational efficiency</li>
-                      <li>Reduced costs and resource utilization</li>
-                      <li>Improved decision-making capabilities</li>
-                      <li>Competitive advantage through innovation</li>
-                    </ul>
+                    <Separator />
+
+                    {/* Scope */}
+                    <div>
+                      <h3 className="text-lg font-semibold flex items-center gap-2 mb-2">
+                        <Target className="h-5 w-5 text-blue-500" />
+                        Scope
+                      </h3>
+                      <p className="text-muted-foreground">{smartject.scope}</p>
+                    </div>
+
+                    <Separator />
+
+                    {/* Target Audience */}
+                    <div>
+                      <h3 className="text-lg font-semibold flex items-center gap-2 mb-2">
+                        <Users className="h-5 w-5 text-indigo-500" />
+                        Target Audience
+                      </h3>
+                      <p className="text-muted-foreground">{smartject.audience}</p>
+                    </div>
+
+                    <Separator />
+
+                    {/* How it Works */}
+                    <div>
+                      <h3 className="text-lg font-semibold flex items-center gap-2 mb-2">
+                        <Cpu className="h-5 w-5 text-green-500" />
+                        How it Works
+                      </h3>
+                      <p className="text-muted-foreground">{smartject.howItWorks}</p>
+                    </div>
+
+                    <Separator />
+
+                    {/* System Architecture */}
+                    <div>
+                      <h3 className="text-lg font-semibold flex items-center gap-2 mb-2">
+                        <Cpu className="h-5 w-5 text-purple-500" />
+                        High-Level System Architecture
+                      </h3>
+                      <p className="text-muted-foreground">{smartject.architecture}</p>
+                    </div>
+
+                    <Separator />
+
+                    {/* Key Differentiators */}
+                    <div>
+                      <h3 className="text-lg font-semibold flex items-center gap-2 mb-2">
+                        <Zap className="h-5 w-5 text-yellow-500" />
+                        Key Differentiators and Innovations
+                      </h3>
+                      <p className="text-muted-foreground">{smartject.innovation}</p>
+                    </div>
+
+                    <Separator />
+
+                    {/* Use Cases */}
+                    <div>
+                      <h3 className="text-lg font-semibold flex items-center gap-2 mb-2">
+                        <Building className="h-5 w-5 text-cyan-500" />
+                        Use Cases
+                      </h3>
+                      <p className="text-muted-foreground">{smartject.useCase}</p>
+                    </div>
+
+                    <Separator />
+
+                    {/* Industries */}
+                    <div>
+                      <h3 className="text-lg font-semibold flex items-center gap-2 mb-2">
+                        <Factory className="h-5 w-5 text-red-500" />
+                        Industries
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {smartject.industries?.map((industry, index) => (
+                          <Badge key={index} variant="secondary">
+                            {industry}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    {/* Business Functions */}
+                    <div>
+                      <h3 className="text-lg font-semibold flex items-center gap-2 mb-2">
+                        <BriefcaseIcon className="h-5 w-5 text-orange-500" />
+                        Business Functions
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {smartject.businessFunctions?.map((func, index) => (
+                          <Badge key={index} variant="secondary">
+                            {func}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Relevant Links */}
+                    {smartject.relevantLinks && smartject.relevantLinks.length > 0 && (
+                      <>
+                        <Separator />
+                        <div>
+                          <h3 className="text-lg font-semibold flex items-center gap-2 mb-2">
+                            <LinkIcon className="h-5 w-5 text-blue-500" />
+                            Relevant Links
+                          </h3>
+                          <ul className="list-disc pl-5 space-y-1">
+                            {smartject.relevantLinks.map((link, index) => (
+                              <li key={index}>
+                                <a
+                                  href={link.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-primary hover:underline"
+                                >
+                                  {link.title}
+                                </a>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </TabsContent>
 
@@ -530,7 +681,7 @@ export default function SmartjectDetailPage({ params }: { params: Promise<{ id: 
               <div className="space-y-4">
                 {mockSmartjects
                   .filter((s) => s.id !== smartject.id)
-                  .filter((s) => s.tags.some((tag) => smartject.tags.includes(tag)))
+                  .filter((s) => s.businessFunctions.some((tag) => smartject.businessFunctions.includes(tag)))
                   .slice(0, 3)
                   .map((s) => (
                     <div key={s.id} className="p-4 border rounded-lg">
@@ -540,13 +691,13 @@ export default function SmartjectDetailPage({ params }: { params: Promise<{ id: 
                         </a>
                       </h4>
                       <div className="flex flex-wrap gap-2 mb-2">
-                        {s.tags.map((tag, index) => (
+                        {s.businessFunctions.map((tag, index) => (
                           <Badge key={index} variant="outline" className="text-xs">
                             {tag}
                           </Badge>
                         ))}
                       </div>
-                      <p className="text-sm text-muted-foreground">{s.description.substring(0, 100)}...</p>
+                      <p className="text-sm text-muted-foreground">{s.mission.substring(0, 100)}...</p>
                     </div>
                   ))}
               </div>

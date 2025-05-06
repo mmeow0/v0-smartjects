@@ -1,8 +1,6 @@
 export type SmartjectType = {
   id: string
   title: string
-  description: string
-  tags: string[]
   votes: {
     believe: number
     need: number
@@ -10,6 +8,18 @@ export type SmartjectType = {
   }
   comments: number
   createdAt: string
+  mission: string
+  problematics: string
+  scope: string
+  audience: string
+  howItWorks: string
+  architecture: string
+  innovation: string
+  useCase: string
+  industries: string[]
+  businessFunctions: string[]
+  relevantLinks: { title: string; url: string }[]
+  image?: string
 }
 
 export type UserType = {

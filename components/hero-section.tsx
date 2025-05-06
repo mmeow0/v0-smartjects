@@ -4,7 +4,7 @@ import Link from "next/link"
 export function HeroSection() {
   return (
     <div className="py-12 md:py-24 text-center">
-      <h1 className="text-4xl md:text-6xl font-bold mb-6">Transform AI Research into Business Reality</h1>
+      <h1 className="text-4xl md:text-6xl font-bold mb-6">Innovations direct delivery<br/> from research to business</h1>
       <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto">
         Smartjects connects cutting-edge AI research with businesses and providers to create real-world implementations.
       </p>

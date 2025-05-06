@@ -26,7 +26,7 @@ export function TopNav() {
 
   // Main navigation items
   const navItems = [
-    { href: "/", label: "Smartjects", isMain: true },
+    { href: "/", label: "Home", isMain: true },
     { href: "/hub", label: "Smartjects Hub", isMain: true },
   ]
 

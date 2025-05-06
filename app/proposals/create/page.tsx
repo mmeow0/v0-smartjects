@@ -175,7 +175,7 @@ export default function CreateProposalPage() {
                   <div className="flex justify-between items-start">
                     <div>
                       <h3 className="font-medium">{smartject.title}</h3>
-                      <p className="text-sm text-muted-foreground">{smartject.description.substring(0, 100)}...</p>
+                      <p className="text-sm text-muted-foreground">{smartject.problematics.substring(0, 100)}...</p>
                     </div>
                     <Badge>{smartjectId}</Badge>
                   </div>
