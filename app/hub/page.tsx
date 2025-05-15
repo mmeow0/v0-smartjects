@@ -1,12 +1,18 @@
 "use client"
 
+import type React from "react"
+
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SmartjectCard } from "@/components/smartject-card"
 import { mockSmartjects } from "@/lib/mock-data"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { ChevronDown, ChevronUp, Filter, Search, X, Building2, Cpu, Workflow } from "lucide-react"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 
 // Filter options
 const industries = ["Supply Chain", "Manufacturing", "Finance", "Customer Support"]
@@ -18,8 +24,9 @@ export default function SmartjectsHubPage() {
   const [selectedIndustries, setSelectedIndustries] = useState<string[]>([])
   const [selectedTechnologies, setSelectedTechnologies] = useState<string[]>([])
   const [selectedFunctions, setSelectedFunctions] = useState<string[]>([])
+  const [isFilterOpen, setIsFilterOpen] = useState(true)
 
-  const handleToggle = (value: string, selected: string[], setSelected: (v: string[]) => void) => {
+  const handleToggleFilter = (value: string, selected: string[], setSelected: (v: string[]) => void) => {
     if (selected.includes(value)) {
       setSelected(selected.filter((v) => v !== value))
     } else {
@@ -27,9 +34,17 @@ export default function SmartjectsHubPage() {
     }
   }
 
+  const clearAllFilters = () => {
+    setSelectedIndustries([])
+    setSelectedTechnologies([])
+    setSelectedFunctions([])
+  }
+
+  const totalFiltersCount = selectedIndustries.length + selectedTechnologies.length + selectedFunctions.length
+
   const filteredSmartjects = mockSmartjects.filter((s) => {
     const matchesQuery =
-      s.title?.toLowerCase().includes(query.toLowerCase()) || s.description?.toLowerCase().includes(query.toLowerCase())
+      s.title?.toLowerCase().includes(query.toLowerCase()) || s.mission?.toLowerCase().includes(query.toLowerCase())
 
     const matchesIndustries =
       selectedIndustries.length === 0 || selectedIndustries.some((i) => s.industries?.includes(i))
@@ -59,58 +74,110 @@ export default function SmartjectsHubPage() {
         <h1 className="text-3xl font-bold">Smartjects Hub</h1>
         <p className="text-muted-foreground mb-4">Explore all available AI implementation projects</p>
 
-        {/* 🔍 Unified Search */}
-        <Card className="p-6 space-y-4 bg-muted/50">
-          <Input placeholder="Search smartjects..." value={query} onChange={(e) => setQuery(e.target.value)} />
+        {/* Search and Filter Bar */}
+        <Card className="p-4 bg-muted/30">
+          <div className="flex flex-col space-y-4">
+            {/* Search Bar */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search smartjects..."
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
 
-          <div className="grid md:grid-cols-3 gap-4">
-            <div>
-              <p className="text-sm font-medium mb-1">Industries</p>
-              <div className="flex flex-wrap gap-2">
-                {industries.map((industry) => (
-                  <Button
-                    key={industry}
-                    variant={selectedIndustries.includes(industry) ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handleToggle(industry, selectedIndustries, setSelectedIndustries)}
-                  >
+            {/* Active Filters Display */}
+            {totalFiltersCount > 0 && (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm text-muted-foreground">Active filters:</span>
+                {selectedIndustries.map((industry) => (
+                  <Badge key={industry} variant="secondary" className="flex items-center gap-1">
+                    <Building2 className="h-3 w-3 mr-1" />
                     {industry}
-                  </Button>
+                    <X
+                      className="h-3 w-3 cursor-pointer ml-1"
+                      onClick={() => handleToggleFilter(industry, selectedIndustries, setSelectedIndustries)}
+                    />
+                  </Badge>
                 ))}
-              </div>
-            </div>
-
-            <div>
-              <p className="text-sm font-medium mb-1">Technologies</p>
-              <div className="flex flex-wrap gap-2">
-                {technologies.map((tech) => (
-                  <Button
-                    key={tech}
-                    variant={selectedTechnologies.includes(tech) ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handleToggle(tech, selectedTechnologies, setSelectedTechnologies)}
-                  >
+                {selectedTechnologies.map((tech) => (
+                  <Badge key={tech} variant="secondary" className="flex items-center gap-1">
+                    <Cpu className="h-3 w-3 mr-1" />
                     {tech}
-                  </Button>
+                    <X
+                      className="h-3 w-3 cursor-pointer ml-1"
+                      onClick={() => handleToggleFilter(tech, selectedTechnologies, setSelectedTechnologies)}
+                    />
+                  </Badge>
                 ))}
-              </div>
-            </div>
-
-            <div>
-              <p className="text-sm font-medium mb-1">Functions</p>
-              <div className="flex flex-wrap gap-2">
-                {functions.map((func) => (
-                  <Button
-                    key={func}
-                    variant={selectedFunctions.includes(func) ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handleToggle(func, selectedFunctions, setSelectedFunctions)}
-                  >
+                {selectedFunctions.map((func) => (
+                  <Badge key={func} variant="secondary" className="flex items-center gap-1">
+                    <Workflow className="h-3 w-3 mr-1" />
                     {func}
-                  </Button>
+                    <X
+                      className="h-3 w-3 cursor-pointer ml-1"
+                      onClick={() => handleToggleFilter(func, selectedFunctions, setSelectedFunctions)}
+                    />
+                  </Badge>
                 ))}
+                <Button variant="ghost" size="sm" onClick={clearAllFilters} className="text-xs h-7 px-2">
+                  Clear all
+                </Button>
               </div>
-            </div>
+            )}
+
+            {/* Collapsible Filter Section */}
+            <Collapsible open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <span className="text-sm font-medium">Filters</span>
+                  {totalFiltersCount > 0 && (
+                    <Badge variant="secondary" className="ml-2 h-5 px-2">
+                      {totalFiltersCount}
+                    </Badge>
+                  )}
+                </div>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    {isFilterOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </Button>
+                </CollapsibleTrigger>
+              </div>
+
+              <CollapsibleContent className="pt-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Industries Filter */}
+                  <FilterCategory
+                    title="Industries"
+                    icon={<Building2 className="h-4 w-4 mr-2" />}
+                    options={industries}
+                    selected={selectedIndustries}
+                    onToggle={(value) => handleToggleFilter(value, selectedIndustries, setSelectedIndustries)}
+                  />
+
+                  {/* Technologies Filter */}
+                  <FilterCategory
+                    title="Technologies"
+                    icon={<Cpu className="h-4 w-4 mr-2" />}
+                    options={technologies}
+                    selected={selectedTechnologies}
+                    onToggle={(value) => handleToggleFilter(value, selectedTechnologies, setSelectedTechnologies)}
+                  />
+
+                  {/* Functions Filter */}
+                  <FilterCategory
+                    title="Functions"
+                    icon={<Workflow className="h-4 w-4 mr-2" />}
+                    options={functions}
+                    selected={selectedFunctions}
+                    onToggle={(value) => handleToggleFilter(value, selectedFunctions, setSelectedFunctions)}
+                  />
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           </div>
         </Card>
       </div>
@@ -156,5 +223,59 @@ export default function SmartjectsHubPage() {
         </TabsContent>
       </Tabs>
     </div>
+  )
+}
+
+// Filter Category Component
+function FilterCategory({
+  title,
+  icon,
+  options,
+  selected,
+  onToggle,
+}: {
+  title: string
+  icon: React.ReactNode
+  options: string[]
+  selected: string[]
+  onToggle: (value: string) => void
+}) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="outline" className="w-full justify-between" aria-expanded={selected.length > 0}>
+          <div className="flex items-center">
+            {icon}
+            <span>{title}</span>
+          </div>
+          {selected.length > 0 && (
+            <Badge variant="secondary" className="ml-2">
+              {selected.length}
+            </Badge>
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-56 p-0" align="start">
+        <div className="p-2">
+          {options.map((option) => (
+            <div
+              key={option}
+              className={`
+                flex items-center justify-between p-2 rounded-md cursor-pointer text-sm
+                ${selected.includes(option) ? "bg-primary/10" : "hover:bg-muted"}
+              `}
+              onClick={() => onToggle(option)}
+            >
+              <span>{option}</span>
+              {selected.includes(option) && (
+                <Badge variant="secondary" className="h-5 px-1.5">
+                  <X className="h-3 w-3" />
+                </Badge>
+              )}
+            </div>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
   )
 }

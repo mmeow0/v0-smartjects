@@ -21,25 +21,13 @@ import {
   FileText,
   MessageSquare,
   Paperclip,
-  Plus,
   Send,
   ThumbsUp,
-  Trash2,
-  X,
   CheckCircle2,
   Circle,
   ListChecks,
 } from "lucide-react"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
-import { DatePicker } from "@/components/ui/date-picker"
 import { Badge } from "@/components/ui/badge"
 
 // Define deliverable type
@@ -89,6 +77,80 @@ const getMockData = (matchId: string, proposalId: string) => ({
       "Documentation and training materials",
     ],
   },
+  milestones: [
+    {
+      id: "milestone-1",
+      name: "Project Kickoff",
+      description: "Initial setup and requirements gathering",
+      percentage: 20,
+      amount: "$3,000",
+      dueDate: (() => {
+        const date = new Date()
+        date.setDate(date.getDate() + 14)
+        return date.toISOString()
+      })(),
+      deliverables: [
+        {
+          id: "del-1",
+          description: "Requirements document",
+          completed: false,
+        },
+        {
+          id: "del-2",
+          description: "Project plan",
+          completed: false,
+        },
+      ],
+    },
+    {
+      id: "milestone-2",
+      name: "MVP Development",
+      description: "Development of core functionality",
+      percentage: 40,
+      amount: "$6,000",
+      dueDate: (() => {
+        const date = new Date()
+        date.setDate(date.getDate() + 45)
+        return date.toISOString()
+      })(),
+      deliverables: [
+        {
+          id: "del-3",
+          description: "Data integration framework",
+          completed: false,
+        },
+        {
+          id: "del-4",
+          description: "Basic prediction model",
+          completed: false,
+        },
+      ],
+    },
+    {
+      id: "milestone-3",
+      name: "Final Delivery",
+      description: "Complete system with documentation",
+      percentage: 40,
+      amount: "$6,000",
+      dueDate: (() => {
+        const date = new Date()
+        date.setDate(date.getDate() + 90)
+        return date.toISOString()
+      })(),
+      deliverables: [
+        {
+          id: "del-5",
+          description: "Complete dashboard",
+          completed: false,
+        },
+        {
+          id: "del-6",
+          description: "Documentation and training materials",
+          completed: false,
+        },
+      ],
+    },
+  ],
   messages: [
     {
       id: "msg-1",
@@ -143,25 +205,14 @@ export default function NegotiatePage({
 
   const [isLoading, setIsLoading] = useState(true)
   const [message, setMessage] = useState("")
+  const [isCounterOffer, setIsCounterOffer] = useState(false)
   const [counterOffer, setCounterOffer] = useState({
     budget: "",
     timeline: "",
   })
   const [useMilestones, setUseMilestones] = useState(false)
   const [milestones, setMilestones] = useState<Milestone[]>([])
-  const [showMilestoneDialog, setShowMilestoneDialog] = useState(false)
-  const [currentMilestone, setCurrentMilestone] = useState<Milestone>({
-    id: "",
-    name: "",
-    description: "",
-    percentage: 0,
-    amount: "",
-    dueDate: "",
-    deliverables: [],
-  })
-  const [editingMilestoneId, setEditingMilestoneId] = useState<string | null>(null)
   const [totalPercentage, setTotalPercentage] = useState(0)
-  const [newDeliverable, setNewDeliverable] = useState("")
 
   // Extract the timeline string once to avoid recalculations
   const currentTimelineStr = useMemo(() => {
@@ -187,9 +238,15 @@ export default function NegotiatePage({
       // Simulate loading data
       setTimeout(() => {
         setIsLoading(false)
+
+        // Set milestones from the negotiation data
+        if (negotiation.milestones && negotiation.milestones.length > 0) {
+          setMilestones(negotiation.milestones)
+          setUseMilestones(true)
+        }
       }, 1000)
     }
-  }, [isAuthenticated, router, user])
+  }, [isAuthenticated, router, user, negotiation.milestones])
 
   // Calculate total percentage whenever milestones change
   useEffect(() => {
@@ -224,39 +281,28 @@ export default function NegotiatePage({
   }
 
   const handleSendMessage = () => {
-    if (!message.trim()) return
-
-    // In a real app, we would call an API to send the message
-    toast({
-      title: "Message sent",
-      description: "Your message has been sent successfully.",
-    })
-
-    // Clear the message input
-    setMessage("")
-  }
-
-  const handleSendCounterOffer = () => {
-    if (!counterOffer.budget && !counterOffer.timeline) {
+    if (!message.trim() && (!isCounterOffer || (!counterOffer.budget && !counterOffer.timeline))) {
       toast({
         title: "Missing information",
-        description: "Please provide at least one counter offer term.",
+        description: "Please provide a message or counter offer terms.",
         variant: "destructive",
       })
       return
     }
 
-    // In a real app, we would call an API to send the counter offer
+    // In a real app, we would call an API to send the message
     toast({
-      title: "Counter offer sent",
-      description: "Your counter offer has been sent successfully.",
+      title: isCounterOffer ? "Counter offer sent" : "Message sent",
+      description: `Your ${isCounterOffer ? "counter offer" : "message"} has been sent successfully.`,
     })
 
-    // Clear the counter offer inputs
+    // Clear the inputs
+    setMessage("")
     setCounterOffer({
       budget: "",
       timeline: "",
     })
+    setIsCounterOffer(false)
   }
 
   const handleAcceptTerms = () => {
@@ -291,181 +337,14 @@ export default function NegotiatePage({
     router.push(`/matches/${id}/contract/${proposalId}`)
   }
 
-  const openAddMilestoneDialog = () => {
-    setEditingMilestoneId(null)
-    setCurrentMilestone({
-      id: Date.now().toString(),
-      name: "",
-      description: "",
-      percentage: 0,
-      amount: "",
-      dueDate: "",
-      deliverables: [],
-    })
-    setNewDeliverable("")
-    setShowMilestoneDialog(true)
-  }
-
-  const openEditMilestoneDialog = (milestone: Milestone) => {
-    setEditingMilestoneId(milestone.id)
-    setCurrentMilestone({ ...milestone })
-    setNewDeliverable("")
-    setShowMilestoneDialog(true)
-  }
-
-  // Calculate suggested due date based on percentage
-  const calculateSuggestedDueDate = (percentage: number): Date => {
-    const projectDuration = projectEndDate.getTime() - projectStartDate.getTime()
-    const daysFromStart = (projectDuration * (percentage / 100)) / (1000 * 60 * 60 * 24)
-
-    const suggestedDate = new Date(projectStartDate)
-    suggestedDate.setDate(suggestedDate.getDate() + Math.round(daysFromStart))
-
-    return suggestedDate
-  }
-
-  const handleSaveMilestone = () => {
-    // Validate milestone data
-    if (!currentMilestone.name.trim()) {
-      toast({
-        title: "Missing information",
-        description: "Please provide a name for the milestone.",
-        variant: "destructive",
-      })
-      return
-    }
-
-    if (currentMilestone.percentage <= 0) {
-      toast({
-        title: "Invalid percentage",
-        description: "Percentage must be greater than 0.",
-        variant: "destructive",
-      })
-      return
-    }
-
-    if (!currentMilestone.dueDate) {
-      toast({
-        title: "Missing information",
-        description: "Please provide a due date for the milestone.",
-        variant: "destructive",
-      })
-      return
-    }
-
-    // Check if adding/updating this milestone would exceed 100%
-    const otherMilestonesTotal = milestones
-      .filter((m) => m.id !== currentMilestone.id)
-      .reduce((sum, m) => sum + m.percentage, 0)
-
-    if (otherMilestonesTotal + currentMilestone.percentage > 100) {
-      toast({
-        title: "Percentage too high",
-        description: "The total percentage of all milestones cannot exceed 100%.",
-        variant: "destructive",
-      })
-      return
-    }
-
-    if (editingMilestoneId) {
-      // Update existing milestone
-      setMilestones(milestones.map((m) => (m.id === editingMilestoneId ? currentMilestone : m)))
-      toast({
-        title: "Milestone updated",
-        description: "The milestone has been updated successfully.",
-      })
-    } else {
-      // Add new milestone
-      setMilestones([...milestones, currentMilestone])
-      toast({
-        title: "Milestone added",
-        description: "The milestone has been added successfully.",
-      })
-    }
-
-    setShowMilestoneDialog(false)
-  }
-
-  const handleDeleteMilestone = (id: string) => {
-    setMilestones(milestones.filter((m) => m.id !== id))
-    toast({
-      title: "Milestone deleted",
-      description: "The milestone has been deleted successfully.",
-    })
-  }
-
-  const formatCurrency = (value: string) => {
-    // Remove any non-digit characters
-    const numericValue = value.replace(/[^0-9]/g, "")
-
-    // Format as currency
-    if (numericValue) {
-      return `$${Number.parseInt(numericValue).toLocaleString()}`
-    }
-    return ""
-  }
-
-  const handleMilestoneAmountChange = (value: string) => {
-    setCurrentMilestone({
-      ...currentMilestone,
-      amount: formatCurrency(value),
-    })
-  }
-
-  const handleMilestoneDateChange = (date: Date | undefined) => {
-    if (date) {
-      setCurrentMilestone({
-        ...currentMilestone,
-        dueDate: date.toISOString(),
-      })
-    }
-  }
-
-  // Update milestone percentage and suggest a due date
-  const handleMilestonePercentageChange = (percentage: number) => {
-    const newPercentage = Math.max(0, Math.min(100, percentage))
-
-    // Calculate suggested due date based on percentage
-    const suggestedDate = calculateSuggestedDueDate(newPercentage)
-
-    setCurrentMilestone({
-      ...currentMilestone,
-      percentage: newPercentage,
-      dueDate: currentMilestone.dueDate || suggestedDate.toISOString(),
-    })
-  }
-
-  // Add a new deliverable to the current milestone
-  const handleAddDeliverable = () => {
-    if (!newDeliverable.trim()) return
-
-    const newDeliverableItem: Deliverable = {
-      id: Date.now().toString(),
-      description: newDeliverable.trim(),
-      completed: false,
-    }
-
-    setCurrentMilestone({
-      ...currentMilestone,
-      deliverables: [...currentMilestone.deliverables, newDeliverableItem],
-    })
-
-    setNewDeliverable("")
-  }
-
-  // Remove a deliverable from the current milestone
-  const handleRemoveDeliverable = (id: string) => {
-    setCurrentMilestone({
-      ...currentMilestone,
-      deliverables: currentMilestone.deliverables.filter((d) => d.id !== id),
-    })
-  }
-
-  // Toggle the completed status of a deliverable
-  const handleToggleDeliverable = (id: string) => {
-    setCurrentMilestone({
-      ...currentMilestone,
-      deliverables: currentMilestone.deliverables.map((d) => (d.id === id ? { ...d, completed: !d.completed } : d)),
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     })
   }
 
@@ -486,111 +365,108 @@ export default function NegotiatePage({
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>Negotiation Chat</CardTitle>
-              <CardDescription>Discuss terms and conditions with the other party</CardDescription>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Discussion</CardTitle>
+                <CardDescription>Negotiate terms and conditions</CardDescription>
+              </div>
+              <Badge variant="outline" className="ml-2">
+                {negotiation.messages.length} messages
+              </Badge>
             </CardHeader>
-            <CardContent className="max-h-[500px] overflow-y-auto">
-              <div className="space-y-6">
+
+            <CardContent>
+              {/* Comments-like interface for messages */}
+              <div className="space-y-6 mb-6">
                 {negotiation.messages.map((msg) => {
                   const isCurrentUser = msg.sender === (user?.id === negotiation.provider.id ? "provider" : "needer")
                   return (
-                    <div key={msg.id} className={`flex ${isCurrentUser ? "justify-end" : "justify-start"}`}>
-                      <div
-                        className={`flex max-w-[80%] ${
-                          isCurrentUser ? "flex-row-reverse" : "flex-row"
-                        } items-start gap-2`}
-                      >
-                        <Avatar className="h-8 w-8 mt-1">
-                          <AvatarFallback>{msg.senderName.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <div
-                          className={`rounded-lg p-3 ${
-                            isCurrentUser ? "bg-primary text-primary-foreground" : "bg-muted"
-                          }`}
-                        >
-                          <div className="flex justify-between items-center mb-1">
-                            <span className="text-xs font-medium">{msg.senderName}</span>
-                            <span className="text-xs opacity-70">
-                              {new Date(msg.timestamp).toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </span>
-                          </div>
-                          <p>{msg.content}</p>
-                          {msg.isCounterOffer && (
-                            <div className="mt-2 p-2 rounded bg-background/20">
-                              <p className="text-xs font-medium mb-1">Counter Offer:</p>
-                              <div className="grid grid-cols-2 gap-2">
-                                <div>
-                                  <span className="text-xs opacity-70">Budget:</span>
-                                  <p className="text-sm font-medium">{msg.counterOffer?.budget ?? ''}</p>
-                                </div>
-                                <div>
-                                  <span className="text-xs opacity-70">Timeline:</span>
-                                  <p className="text-sm font-medium">{msg.counterOffer?.timeline ?? ''}</p>
-                                </div>
-                              </div>
-                            </div>
-                          )}
+                    <div key={msg.id} className="flex gap-4 p-4 border rounded-lg bg-card">
+                      <Avatar className="h-10 w-10">
+                        <AvatarFallback>{msg.senderName.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <div className="flex justify-between items-center mb-2">
+                          <h4 className="font-semibold">{msg.senderName}</h4>
+                          <span className="text-xs text-muted-foreground">{formatDate(msg.timestamp)}</span>
                         </div>
+                        <p className="mb-3">{msg.content}</p>
+
+                        {msg.isCounterOffer && (
+                          <div className="bg-muted p-3 rounded-md mb-2">
+                            <p className="text-sm font-medium mb-2">Counter Offer:</p>
+                            <div className="grid grid-cols-2 gap-4">
+                              {msg.counterOffer?.budget && (
+                                <div>
+                                  <span className="text-xs text-muted-foreground">Budget:</span>
+                                  <p className="font-medium">{msg.counterOffer.budget}</p>
+                                </div>
+                              )}
+                              {msg.counterOffer?.timeline && (
+                                <div>
+                                  <span className="text-xs text-muted-foreground">Timeline:</span>
+                                  <p className="font-medium">{msg.counterOffer.timeline}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )
                 })}
               </div>
-            </CardContent>
-            <CardFooter className="flex flex-col gap-4">
-              <div className="w-full">
+
+              {/* New message input */}
+              <div className="space-y-4 pt-4 border-t">
                 <Textarea
                   placeholder="Type your message..."
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   className="min-h-[100px]"
                 />
-                <div className="flex justify-between mt-2">
+
+                <div className="flex items-center gap-2">
+                  <Switch id="counter-offer" checked={isCounterOffer} onCheckedChange={setIsCounterOffer} />
+                  <Label htmlFor="counter-offer">Include counter offer</Label>
+                </div>
+
+                {isCounterOffer && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 border rounded-md bg-muted/30">
+                    <div>
+                      <Label htmlFor="budget">Budget</Label>
+                      <Input
+                        id="budget"
+                        placeholder="e.g. $16,000"
+                        value={counterOffer.budget}
+                        onChange={(e) => setCounterOffer({ ...counterOffer, budget: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="timeline">Timeline</Label>
+                      <Input
+                        id="timeline"
+                        placeholder="e.g. 2.5 months"
+                        value={counterOffer.timeline}
+                        onChange={(e) => setCounterOffer({ ...counterOffer, timeline: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex justify-between">
                   <Button variant="outline" size="sm">
                     <Paperclip className="h-4 w-4 mr-2" />
                     Attach File
                   </Button>
-                  <Button size="sm" onClick={handleSendMessage} disabled={!message.trim()}>
+                  <Button onClick={handleSendMessage}>
                     <Send className="h-4 w-4 mr-2" />
-                    Send Message
+                    {isCounterOffer ? "Send Counter Offer" : "Send Message"}
                   </Button>
                 </div>
               </div>
-
-              <Separator />
-
-              <div className="w-full">
-                <h3 className="text-sm font-medium mb-2">Send Counter Offer</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <Label htmlFor="budget">Budget</Label>
-                    <Input
-                      id="budget"
-                      placeholder="e.g. $16,000"
-                      value={counterOffer.budget}
-                      onChange={(e) => setCounterOffer({ ...counterOffer, budget: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="timeline">Timeline</Label>
-                    <Input
-                      id="timeline"
-                      placeholder="e.g. 2.5 months"
-                      value={counterOffer.timeline}
-                      onChange={(e) => setCounterOffer({ ...counterOffer, timeline: e.target.value })}
-                    />
-                  </div>
-                </div>
-                <Button onClick={handleSendCounterOffer} className="w-full">
-                  Send Counter Offer
-                </Button>
-              </div>
-            </CardFooter>
+            </CardContent>
           </Card>
         </div>
 
@@ -648,7 +524,7 @@ export default function NegotiatePage({
           <Card className="mb-6">
             <CardHeader>
               <CardTitle>Payment Milestones</CardTitle>
-              <CardDescription>Define payment schedule for the project</CardDescription>
+              <CardDescription>Review payment schedule for the project</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -669,8 +545,7 @@ export default function NegotiatePage({
                   <>
                     <div className="border rounded-md p-3 bg-muted/30">
                       <p className="text-sm">
-                        Define payment milestones to break down the project into manageable phases. Each milestone
-                        should have a percentage of the total budget.
+                        These milestones were defined in the proposal. You can review them before accepting the terms.
                       </p>
                       <div className="mt-2 text-sm flex justify-between">
                         <span>
@@ -685,7 +560,7 @@ export default function NegotiatePage({
                     {milestones.length > 0 ? (
                       <div className="space-y-2">
                         {milestones.map((milestone) => (
-                          <div key={milestone.id} className="border rounded-md p-3 flex justify-between items-start">
+                          <div key={milestone.id} className="border rounded-md p-3">
                             <div className="w-full">
                               <div className="font-medium">{milestone.name}</div>
                               <div className="text-sm text-muted-foreground">{milestone.description}</div>
@@ -718,31 +593,16 @@ export default function NegotiatePage({
                                 </div>
                               )}
                             </div>
-                            <div className="flex gap-1 ml-2">
-                              <Button variant="ghost" size="icon" onClick={() => openEditMilestoneDialog(milestone)}>
-                                <FileText className="h-4 w-4" />
-                                <span className="sr-only">Edit</span>
-                              </Button>
-                              <Button variant="ghost" size="icon" onClick={() => handleDeleteMilestone(milestone.id)}>
-                                <Trash2 className="h-4 w-4" />
-                                <span className="sr-only">Delete</span>
-                              </Button>
-                            </div>
                           </div>
                         ))}
                       </div>
                     ) : (
                       <div className="border border-dashed rounded-md p-6 flex flex-col items-center justify-center text-center text-muted-foreground">
                         <FileText className="h-8 w-8 mb-2" />
-                        <p>No milestones defined yet</p>
-                        <p className="text-sm">Add milestones to define the payment schedule</p>
+                        <p>No milestones defined in the proposal</p>
+                        <p className="text-sm">The proposal did not include payment milestones</p>
                       </div>
                     )}
-
-                    <Button variant="outline" className="w-full" onClick={openAddMilestoneDialog}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Milestone
-                    </Button>
                   </>
                 )}
               </div>
@@ -783,191 +643,6 @@ export default function NegotiatePage({
           </Card>
         </div>
       </div>
-
-      {/* Milestone Dialog */}
-      <Dialog open={showMilestoneDialog} onOpenChange={setShowMilestoneDialog}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{editingMilestoneId ? "Edit Milestone" : "Add Milestone"}</DialogTitle>
-            <DialogDescription>
-              {editingMilestoneId ? "Update the details of this milestone" : "Define a new milestone for the project"}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="milestone-name">Milestone Name</Label>
-              <Input
-                id="milestone-name"
-                placeholder="e.g., Project Kickoff, MVP Delivery"
-                value={currentMilestone.name}
-                onChange={(e) => setCurrentMilestone({ ...currentMilestone, name: e.target.value })}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="milestone-description">Description</Label>
-              <Textarea
-                id="milestone-description"
-                placeholder="Describe what will be delivered in this milestone"
-                value={currentMilestone.description}
-                onChange={(e) => setCurrentMilestone({ ...currentMilestone, description: e.target.value })}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="milestone-percentage">Percentage (%)</Label>
-                <Input
-                  id="milestone-percentage"
-                  type="number"
-                  min="1"
-                  max="100"
-                  placeholder="e.g., 25"
-                  value={currentMilestone.percentage || ""}
-                  onChange={(e) => handleMilestonePercentageChange(Number.parseInt(e.target.value) || 0)}
-                />
-                <p className="text-xs text-muted-foreground">Percentage of total budget</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="milestone-amount">Amount</Label>
-                <Input
-                  id="milestone-amount"
-                  placeholder="e.g., $5,000"
-                  value={currentMilestone.amount}
-                  onChange={(e) => handleMilestoneAmountChange(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">Payment amount for this milestone</p>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="milestone-due-date">Due Date</Label>
-              <DatePicker
-                date={currentMilestone.dueDate ? new Date(currentMilestone.dueDate) : undefined}
-                onSelect={handleMilestoneDateChange}
-              />
-
-              {/* Timeline position indicator */}
-              {currentMilestone.dueDate && (
-                <div className="mt-2 pt-2 border-t">
-                  <p className="text-xs text-muted-foreground mb-1">Position in project timeline:</p>
-                  <div className="relative h-1 bg-muted rounded-full">
-                    {/* Project progress indicator */}
-                    <div className="absolute top-0 left-0 h-1 bg-primary/30 rounded-l-full" style={{ width: "100%" }} />
-
-                    {/* Milestone position */}
-                    {(() => {
-                      const milestoneDate = new Date(currentMilestone.dueDate)
-                      const position = Math.max(
-                        0,
-                        Math.min(
-                          ((milestoneDate.getTime() - projectStartDate.getTime()) /
-                            (projectEndDate.getTime() - projectStartDate.getTime())) *
-                            100,
-                          100,
-                        ),
-                      )
-
-                      return (
-                        <div
-                          className="absolute top-0 w-2 h-2 bg-primary rounded-full -translate-x-1 -translate-y-0.5"
-                          style={{ left: `${position}%` }}
-                        />
-                      )
-                    })()}
-                  </div>
-                  <div className="flex justify-between mt-1 text-xs text-muted-foreground">
-                    <span>Start</span>
-                    <span>End</span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Deliverables Section */}
-            <div className="space-y-2 pt-2 border-t">
-              <Label className="flex items-center gap-2">
-                <ListChecks className="h-4 w-4" /> Deliverables
-                <Badge variant="outline" className="ml-2">
-                  {currentMilestone.deliverables.length}
-                </Badge>
-              </Label>
-
-              {currentMilestone.deliverables.length > 0 ? (
-                <div className="border rounded-md p-2 space-y-2 max-h-[200px] overflow-y-auto">
-                  {currentMilestone.deliverables.map((deliverable) => (
-                    <div key={deliverable.id} className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                        onClick={() => handleToggleDeliverable(deliverable.id)}
-                      >
-                        {deliverable.completed ? (
-                          <CheckCircle2 className="h-4 w-4 text-green-500" />
-                        ) : (
-                          <Circle className="h-4 w-4" />
-                        )}
-                        <span className="sr-only">Toggle completion</span>
-                      </Button>
-                      <span className="flex-1 text-sm">{deliverable.description}</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 text-destructive"
-                        onClick={() => handleRemoveDeliverable(deliverable.id)}
-                      >
-                        <X className="h-4 w-4" />
-                        <span className="sr-only">Remove</span>
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="border border-dashed rounded-md p-4 text-center text-muted-foreground">
-                  <p className="text-sm">No deliverables added yet</p>
-                </div>
-              )}
-
-              <div className="flex gap-2 mt-2">
-                <Input
-                  placeholder="Add a deliverable item..."
-                  value={newDeliverable}
-                  onChange={(e) => setNewDeliverable(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && newDeliverable.trim()) {
-                      e.preventDefault()
-                      handleAddDeliverable()
-                    }
-                  }}
-                />
-                <Button type="button" size="sm" onClick={handleAddDeliverable} disabled={!newDeliverable.trim()}>
-                  <Plus className="h-4 w-4" />
-                  <span className="sr-only">Add</span>
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Add specific items that will be delivered as part of this milestone
-              </p>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowMilestoneDialog(false)}>
-              <X className="h-4 w-4 mr-2" />
-              Cancel
-            </Button>
-            <Button onClick={handleSaveMilestone}>
-              <Check className="h-4 w-4 mr-2" />
-              {editingMilestoneId ? "Update Milestone" : "Add Milestone"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

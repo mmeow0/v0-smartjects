@@ -5,7 +5,7 @@ import { Calendar } from "lucide-react"
 
 interface Milestone {
   id: string
-  name: string
+  title: string
   description: string
   percentage: number
   amount: string
@@ -95,7 +95,7 @@ export function MilestoneTimeline({ milestones, projectStartDate, projectEndDate
               style={{ left: `${position}%` }}
             >
               <div className={`absolute ${isAbove ? "-top-16" : "top-4"} -left-16 w-32 text-center`}>
-                <div className="text-xs font-medium">{milestone.name}</div>
+                <div className="text-xs font-medium">{milestone.title}</div>
                 <div className="text-xs text-muted-foreground">{milestoneDate.toLocaleDateString()}</div>
                 <div className="text-xs font-medium">{milestone.percentage}%</div>
               </div>

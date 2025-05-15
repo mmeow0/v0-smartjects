@@ -57,7 +57,7 @@ export const mockSmartjects: SmartjectType[] = [
     },
     comments: 21,
     createdAt: "2025-04-14",
-    image: "placeholder.svg",
+    image: "/placeholder.svg",
     mission:
       "Enhance the dimensional flexibility and expressiveness of positional embeddings in Transformer architectures for improved performance in multidimensional data applications.",
     problematics:
@@ -101,7 +101,7 @@ export const mockSmartjects: SmartjectType[] = [
     },
     comments: 45,
     createdAt: "2025-04-16",
-    image: "placeholder.svg",
+    image: "/placeholder.svg",
     mission:
       "To enhance AI reasoning capabilities by integrating multimodal inputs for complex task processing across various domains.",
     problematics:
@@ -147,7 +147,7 @@ export const mockSmartjects: SmartjectType[] = [
     },
     comments: 53,
     createdAt: "2023-09-18",
-    image: "placeholder.svg",
+    image: "/placeholder.svg",
     mission:
       "Protect financial systems from fraud through intelligent pattern detection.",
     problematics:
@@ -184,7 +184,7 @@ export const mockSmartjects: SmartjectType[] = [
     },
     comments: 29,
     createdAt: "2023-11-30",
-    image: "placeholder.svg",
+    image: "/placeholder.svg",
     mission: "Empower every learner with a tailored educational journey.",
     problematics: "Standardized education doesn't fit all students' needs.",
     scope: "K-12, higher education, corporate training.",
@@ -213,7 +213,7 @@ export const mockSmartjects: SmartjectType[] = [
     },
     comments: 38,
     createdAt: "2023-10-05",
-    image: "placeholder.svg",
+    image: "/placeholder.svg",
     mission:
       "Enhance product quality and reduce waste through automated visual inspection.",
     problematics: "Manual inspection is time-consuming and error-prone.",
@@ -251,7 +251,7 @@ export const mockSmartjects: SmartjectType[] = [
     },
     comments: 21,
     createdAt: "2023-12-15",
-    image: "placeholder.svg",
+    image: "/placeholder.svg",
     mission:
       "Reduce energy waste and operational costs through smart automation.",
     problematics:
@@ -293,7 +293,7 @@ export const mockSmartjects: SmartjectType[] = [
     },
     comments: 34,
     createdAt: "2023-11-08",
-    image: "placeholder.svg",
+    image: "/placeholder.svg",
     mission: "Empower brands with real-time insights into public perception.",
     problematics: "Brands lack real-time visibility into public perception.",
     scope: "Consumer brands, PR agencies, and marketing teams.",
@@ -328,7 +328,7 @@ export const mockSmartjects: SmartjectType[] = [
     },
     comments: 41,
     createdAt: "2023-10-12",
-    image: "placeholder.svg",
+    image: "/placeholder.svg",
     mission:
       "Streamline warehouse operations with autonomous, real-time inventory tracking.",
     problematics: "Inventory errors lead to stockouts or overstocking.",

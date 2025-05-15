@@ -16,9 +16,38 @@ import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { FileUploader } from "@/components/file-uploader"
-import { ArrowLeft, ArrowRight, Save, Send, FileText, Calendar, DollarSign } from "lucide-react"
+import { ArrowLeft, ArrowRight, Save, Send, FileText, Calendar, DollarSign, Check } from "lucide-react"
 import { ProposalDocumentPreview } from "@/components/proposal-document-preview"
 import type { DocumentVersion } from "@/components/document-version-history"
+import { DatePicker } from "@/components/ui/date-picker"
+import { Switch } from "@/components/ui/switch"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { AlertCircle, Plus, Trash2, ListChecks, Circle, CheckCircle2, X } from "lucide-react"
+
+// Define deliverable type
+interface Deliverable {
+  id: string
+  description: string
+  completed: boolean
+}
+
+// Define milestone type
+interface Milestone {
+  id: string
+  name: string
+  description: string
+  percentage: number
+  amount: string
+  dueDate: string
+  deliverables: Deliverable[]
+}
 
 export default function EditProposalPage({ params }: { params: { id: string } }) {
   const router = useRouter()
@@ -49,6 +78,31 @@ export default function EditProposalPage({ params }: { params: { id: string } })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [documentVersions, setDocumentVersions] = useState<DocumentVersion[]>([])
 
+  // Milestone state
+  const [useMilestones, setUseMilestones] = useState(false)
+  const [milestones, setMilestones] = useState<Milestone[]>([])
+  const [showMilestoneDialog, setShowMilestoneDialog] = useState(false)
+  const [currentMilestone, setCurrentMilestone] = useState<Milestone>({
+    id: "",
+    name: "",
+    description: "",
+    percentage: 0,
+    amount: "",
+    dueDate: "",
+    deliverables: [],
+  })
+  const [editingMilestoneId, setEditingMilestoneId] = useState<string | null>(null)
+  const [totalPercentage, setTotalPercentage] = useState(0)
+  const [newDeliverable, setNewDeliverable] = useState("")
+
+  // Project timeline dates
+  const [projectStartDate, setProjectStartDate] = useState<Date>(() => new Date())
+  const [projectEndDate, setProjectEndDate] = useState<Date>(() => {
+    const endDate = new Date()
+    endDate.setMonth(endDate.getMonth() + 3) // Default 3 months
+    return endDate
+  })
+
   // Redirect if not authenticated or not a paid user
   useEffect(() => {
     if (!isAuthenticated) {
@@ -60,6 +114,12 @@ export default function EditProposalPage({ params }: { params: { id: string } })
       fetchProposalData()
     }
   }, [isAuthenticated, router, user, params.id])
+
+  // Calculate total percentage whenever milestones change
+  useEffect(() => {
+    const total = milestones.reduce((sum, milestone) => sum + milestone.percentage, 0)
+    setTotalPercentage(total)
+  }, [milestones])
 
   const fetchProposalData = () => {
     // In a real app, we would fetch the proposal data from an API
@@ -75,6 +135,7 @@ export default function EditProposalPage({ params }: { params: { id: string } })
         updatedAt: "2023-12-05",
         smartjectId: "smartject-1",
         smartjectTitle: "AI-Powered Supply Chain Optimization",
+        requirements: "Implementing an AI-powered supply chain optimization solution",
         description:
           "This proposal outlines our approach to implementing an AI-powered supply chain optimization solution that will predict disruptions and optimize inventory management based on real-time data analysis.",
         scope:
@@ -125,6 +186,68 @@ export default function EditProposalPage({ params }: { params: { id: string } })
             changes: ["Initial proposal creation"],
           },
         ],
+        milestones: [
+          {
+            id: "milestone-1",
+            name: "Project Kickoff",
+            description: "Initial setup and requirements gathering",
+            percentage: 20,
+            amount: "$3,000",
+            dueDate: "2023-12-15",
+            deliverables: [
+              {
+                id: "del-1",
+                description: "Requirements document",
+                completed: false,
+              },
+              {
+                id: "del-2",
+                description: "Project plan",
+                completed: false,
+              },
+            ],
+          },
+          {
+            id: "milestone-2",
+            name: "MVP Development",
+            description: "Development of core functionality",
+            percentage: 40,
+            amount: "$6,000",
+            dueDate: "2024-01-15",
+            deliverables: [
+              {
+                id: "del-3",
+                description: "Data integration framework",
+                completed: false,
+              },
+              {
+                id: "del-4",
+                description: "Basic prediction model",
+                completed: false,
+              },
+            ],
+          },
+          {
+            id: "milestone-3",
+            name: "Final Delivery",
+            description: "Complete system with documentation",
+            percentage: 40,
+            amount: "$6,000",
+            dueDate: "2024-03-01",
+            deliverables: [
+              {
+                id: "del-5",
+                description: "Complete dashboard",
+                completed: false,
+              },
+              {
+                id: "del-6",
+                description: "Documentation and training materials",
+                completed: false,
+              },
+            ],
+          },
+        ],
       }
 
       // Set form data
@@ -149,6 +272,16 @@ export default function EditProposalPage({ params }: { params: { id: string } })
 
       // Set document versions
       setDocumentVersions(proposal.documentVersions)
+
+      // Set milestones
+      setMilestones(proposal.milestones || [])
+      setUseMilestones(proposal.milestones && proposal.milestones.length > 0)
+
+      // Set project dates
+      setProjectStartDate(new Date("2023-12-01"))
+      const endDate = new Date("2023-12-01")
+      endDate.setMonth(endDate.getMonth() + 3) // 3 months
+      setProjectEndDate(endDate)
 
       setIsLoading(false)
     }, 1000)
@@ -212,6 +345,17 @@ export default function EditProposalPage({ params }: { params: { id: string } })
   const handleSubmit = async () => {
     setIsSubmitting(true)
 
+    // Validate milestones if they're being used
+    if (useMilestones && totalPercentage !== 100) {
+      toast({
+        title: "Invalid milestone percentages",
+        description: "The total percentage of all milestones must equal 100%.",
+        variant: "destructive",
+      })
+      setIsSubmitting(false)
+      return
+    }
+
     // In a real app, we would call an API to submit the proposal
     setTimeout(() => {
       toast({
@@ -224,7 +368,7 @@ export default function EditProposalPage({ params }: { params: { id: string } })
   }
 
   const nextStep = () => {
-    if (currentStep < 4) {
+    if (currentStep < 5) {
       setCurrentStep(currentStep + 1)
       window.scrollTo(0, 0)
     }
@@ -235,6 +379,185 @@ export default function EditProposalPage({ params }: { params: { id: string } })
       setCurrentStep(currentStep - 1)
       window.scrollTo(0, 0)
     }
+  }
+
+  // Milestone functions
+  const openAddMilestoneDialog = () => {
+    setEditingMilestoneId(null)
+    setCurrentMilestone({
+      id: Date.now().toString(),
+      name: "",
+      description: "",
+      percentage: 0,
+      amount: "",
+      dueDate: "",
+      deliverables: [],
+    })
+    setNewDeliverable("")
+    setShowMilestoneDialog(true)
+  }
+
+  const openEditMilestoneDialog = (milestone: Milestone) => {
+    setEditingMilestoneId(milestone.id)
+    setCurrentMilestone({ ...milestone })
+    setNewDeliverable("")
+    setShowMilestoneDialog(true)
+  }
+
+  // Calculate suggested due date based on percentage
+  const calculateSuggestedDueDate = (percentage: number): Date => {
+    const projectDuration = projectEndDate.getTime() - projectStartDate.getTime()
+    const daysFromStart = (projectDuration * (percentage / 100)) / (1000 * 60 * 60 * 24)
+
+    const suggestedDate = new Date(projectStartDate)
+    suggestedDate.setDate(suggestedDate.getDate() + Math.round(daysFromStart))
+
+    return suggestedDate
+  }
+
+  const handleSaveMilestone = () => {
+    // Validate milestone data
+    if (!currentMilestone.name.trim()) {
+      toast({
+        title: "Missing information",
+        description: "Please provide a name for the milestone.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (currentMilestone.percentage <= 0) {
+      toast({
+        title: "Invalid percentage",
+        description: "Percentage must be greater than 0.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (!currentMilestone.dueDate) {
+      toast({
+        title: "Missing information",
+        description: "Please provide a due date for the milestone.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Check if adding/updating this milestone would exceed 100%
+    const otherMilestonesTotal = milestones
+      .filter((m) => m.id !== currentMilestone.id)
+      .reduce((sum, m) => sum + m.percentage, 0)
+
+    if (otherMilestonesTotal + currentMilestone.percentage > 100) {
+      toast({
+        title: "Percentage too high",
+        description: "The total percentage of all milestones cannot exceed 100%.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (editingMilestoneId) {
+      // Update existing milestone
+      setMilestones(milestones.map((m) => (m.id === editingMilestoneId ? currentMilestone : m)))
+      toast({
+        title: "Milestone updated",
+        description: "The milestone has been updated successfully.",
+      })
+    } else {
+      // Add new milestone
+      setMilestones([...milestones, currentMilestone])
+      toast({
+        title: "Milestone added",
+        description: "The milestone has been added successfully.",
+      })
+    }
+
+    setShowMilestoneDialog(false)
+  }
+
+  const handleDeleteMilestone = (id: string) => {
+    setMilestones(milestones.filter((m) => m.id !== id))
+    toast({
+      title: "Milestone deleted",
+      description: "The milestone has been deleted successfully.",
+    })
+  }
+
+  const formatCurrency = (value: string) => {
+    // Remove any non-digit characters
+    const numericValue = value.replace(/[^0-9]/g, "")
+
+    // Format as currency
+    if (numericValue) {
+      return `$${Number.parseInt(numericValue).toLocaleString()}`
+    }
+    return ""
+  }
+
+  const handleMilestoneAmountChange = (value: string) => {
+    setCurrentMilestone({
+      ...currentMilestone,
+      amount: formatCurrency(value),
+    })
+  }
+
+  const handleMilestoneDateChange = (date: Date | undefined) => {
+    if (date) {
+      setCurrentMilestone({
+        ...currentMilestone,
+        dueDate: date.toISOString(),
+      })
+    }
+  }
+
+  // Update milestone percentage and suggest a due date
+  const handleMilestonePercentageChange = (percentage: number) => {
+    const newPercentage = Math.max(0, Math.min(100, percentage))
+
+    // Calculate suggested due date based on percentage
+    const suggestedDate = calculateSuggestedDueDate(newPercentage)
+
+    setCurrentMilestone({
+      ...currentMilestone,
+      percentage: newPercentage,
+      dueDate: currentMilestone.dueDate || suggestedDate.toISOString(),
+    })
+  }
+
+  // Add a new deliverable to the current milestone
+  const handleAddDeliverable = () => {
+    if (!newDeliverable.trim()) return
+
+    const newDeliverableItem: Deliverable = {
+      id: Date.now().toString(),
+      description: newDeliverable.trim(),
+      completed: false,
+    }
+
+    setCurrentMilestone({
+      ...currentMilestone,
+      deliverables: [...currentMilestone.deliverables, newDeliverableItem],
+    })
+
+    setNewDeliverable("")
+  }
+
+  // Remove a deliverable from the current milestone
+  const handleRemoveDeliverable = (id: string) => {
+    setCurrentMilestone({
+      ...currentMilestone,
+      deliverables: currentMilestone.deliverables.filter((d) => d.id !== id),
+    })
+  }
+
+  // Toggle the completed status of a deliverable
+  const handleToggleDeliverable = (id: string) => {
+    setCurrentMilestone({
+      ...currentMilestone,
+      deliverables: currentMilestone.deliverables.map((d) => (d.id === id ? { ...d, completed: !d.completed } : d)),
+    })
   }
 
   const renderStepContent = () => {
@@ -440,6 +763,107 @@ export default function EditProposalPage({ params }: { params: { id: string } })
       case 4:
         return (
           <div className="space-y-6">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="use-milestones" className="flex items-center gap-2">
+                  <span>Use payment milestones</span>
+                  {useMilestones && totalPercentage !== 100 && (
+                    <span className="text-xs text-red-500 flex items-center">
+                      <AlertCircle className="h-3 w-3 mr-1" />
+                      Total must be 100%
+                    </span>
+                  )}
+                </Label>
+                <Switch id="use-milestones" checked={useMilestones} onCheckedChange={setUseMilestones} />
+              </div>
+
+              {useMilestones && (
+                <>
+                  <div className="border rounded-md p-3 bg-muted/30">
+                    <p className="text-sm">
+                      Define payment milestones to break down the project into manageable phases. Each milestone should
+                      have a percentage of the total budget.
+                    </p>
+                    <div className="mt-2 text-sm flex justify-between">
+                      <span>
+                        Current total: <strong>{totalPercentage}%</strong>
+                      </span>
+                      <span>
+                        Remaining: <strong>{100 - totalPercentage}%</strong>
+                      </span>
+                    </div>
+                  </div>
+
+                  {milestones.length > 0 ? (
+                    <div className="space-y-2">
+                      {milestones.map((milestone) => (
+                        <div key={milestone.id} className="border rounded-md p-3 flex justify-between items-start">
+                          <div className="w-full">
+                            <div className="font-medium">{milestone.name}</div>
+                            <div className="text-sm text-muted-foreground">{milestone.description}</div>
+                            <div className="mt-1 flex gap-3 text-sm">
+                              <span>{milestone.percentage}%</span>
+                              <span>{milestone.amount}</span>
+                              <span>Due: {new Date(milestone.dueDate).toLocaleDateString()}</span>
+                            </div>
+
+                            {/* Display deliverables if any */}
+                            {milestone.deliverables && milestone.deliverables.length > 0 && (
+                              <div className="mt-2 pt-2 border-t">
+                                <div className="flex items-center text-xs text-muted-foreground mb-1">
+                                  <ListChecks className="h-3 w-3 mr-1" /> Deliverables
+                                </div>
+                                <ul className="text-sm space-y-1 mt-1">
+                                  {milestone.deliverables.map((deliverable) => (
+                                    <li key={deliverable.id} className="flex items-start gap-2">
+                                      <span className="mt-0.5">
+                                        {deliverable.completed ? (
+                                          <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                        ) : (
+                                          <Circle className="h-4 w-4 text-muted-foreground" />
+                                        )}
+                                      </span>
+                                      <span className="flex-1">{deliverable.description}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex gap-1 ml-2">
+                            <Button variant="ghost" size="icon" onClick={() => openEditMilestoneDialog(milestone)}>
+                              <FileText className="h-4 w-4" />
+                              <span className="sr-only">Edit</span>
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleDeleteMilestone(milestone.id)}>
+                              <Trash2 className="h-4 w-4" />
+                              <span className="sr-only">Delete</span>
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="border border-dashed rounded-md p-6 flex flex-col items-center justify-center text-center text-muted-foreground">
+                      <FileText className="h-8 w-8 mb-2" />
+                      <p>No milestones defined yet</p>
+                      <p className="text-sm">Add milestones to define the payment schedule</p>
+                    </div>
+                  )}
+
+                  <Button variant="outline" className="w-full" onClick={openAddMilestoneDialog}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Milestone
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        )
+
+      case 5:
+        return (
+          <div className="space-y-6">
             <div className="space-y-2">
               <Label>Supporting Documents</Label>
               <FileUploader onFilesChange={handleFileChange} />
@@ -581,20 +1005,22 @@ export default function EditProposalPage({ params }: { params: { id: string } })
         <div className="mb-8">
           <div className="flex justify-between items-center mb-2">
             <p className="text-sm font-medium">
-              Step {currentStep} of 4:{" "}
+              Step {currentStep} of 5:{" "}
               {currentStep === 1
                 ? "Basic Information"
                 : currentStep === 2
                   ? "Project Details"
                   : currentStep === 3
                     ? "Specific Requirements"
-                    : "Documents & Review"}
+                    : currentStep === 4
+                      ? "Payment Milestones"
+                      : "Documents & Review"}
             </p>
             <p className="text-sm text-muted-foreground">
-              {currentStep === 4 ? "Final Step" : `${currentStep * 25}% Complete`}
+              {currentStep === 5 ? "Final Step" : `${currentStep * 20}% Complete`}
             </p>
           </div>
-          <Progress value={currentStep * 25} className="h-2" />
+          <Progress value={currentStep * 20} className="h-2" />
         </div>
 
         <Card>
@@ -608,7 +1034,9 @@ export default function EditProposalPage({ params }: { params: { id: string } })
                     ? proposalType === "need"
                       ? "Your Requirements"
                       : "Your Expertise & Approach"
-                    : "Supporting Documents & Review"}
+                    : currentStep === 4
+                      ? "Payment Milestones"
+                      : "Supporting Documents & Review"}
             </CardTitle>
             <CardDescription>
               {currentStep === 1
@@ -619,7 +1047,9 @@ export default function EditProposalPage({ params }: { params: { id: string } })
                     ? proposalType === "need"
                       ? "Update your detailed requirements for this smartject"
                       : "Revise your expertise and approach to implementing this smartject"
-                    : "Update supporting documents and review your proposal"}
+                    : currentStep === 4
+                      ? "Define payment milestones for the project"
+                      : "Update supporting documents and review your proposal"}
             </CardDescription>
           </CardHeader>
           <CardContent>{renderStepContent()}</CardContent>
@@ -637,7 +1067,7 @@ export default function EditProposalPage({ params }: { params: { id: string } })
                 <Save className="h-4 w-4 mr-2" />
                 {isSaving ? "Saving..." : "Save Draft"}
               </Button>
-              {currentStep < 4 ? (
+              {currentStep < 5 ? (
                 <Button onClick={nextStep}>
                   Next
                   <ArrowRight className="h-4 w-4 ml-2" />
@@ -652,6 +1082,188 @@ export default function EditProposalPage({ params }: { params: { id: string } })
           </CardFooter>
         </Card>
       </div>
+
+      {/* Milestone Dialog */}
+      <Dialog open={showMilestoneDialog} onOpenChange={setShowMilestoneDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{editingMilestoneId ? "Edit Milestone" : "Add Milestone"}</DialogTitle>
+            <DialogDescription>
+              {editingMilestoneId ? "Update the details of this milestone" : "Define a new milestone for the project"}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="milestone-name">Milestone Name</Label>
+              <Input
+                id="milestone-name"
+                placeholder="e.g., Project Kickoff, MVP Delivery"
+                value={currentMilestone.name}
+                onChange={(e) => setCurrentMilestone({ ...currentMilestone, name: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="milestone-description">Description</Label>
+              <Textarea
+                id="milestone-description"
+                placeholder="Describe what will be delivered in this milestone"
+                value={currentMilestone.description}
+                onChange={(e) => setCurrentMilestone({ ...currentMilestone, description: e.target.value })}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="milestone-percentage">Percentage (%)</Label>
+                <Input
+                  id="milestone-percentage"
+                  type="number"
+                  min="1"
+                  max="100"
+                  placeholder="e.g., 25"
+                  value={currentMilestone.percentage || ""}
+                  onChange={(e) => handleMilestonePercentageChange(Number.parseInt(e.target.value) || 0)}
+                />
+                <p className="text-xs text-muted-foreground">Percentage of total budget</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="milestone-amount">Amount</Label>
+                <Input
+                  id="milestone-amount"
+                  placeholder="e.g., $5,000"
+                  value={currentMilestone.amount}
+                  onChange={(e) => handleMilestoneAmountChange(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">Payment amount for this milestone</p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="milestone-due-date">Due Date</Label>
+              <DatePicker
+                date={currentMilestone.dueDate ? new Date(currentMilestone.dueDate) : undefined}
+                onSelect={handleMilestoneDateChange}
+              />
+
+              {/* Timeline position indicator */}
+              {currentMilestone.dueDate && (
+                <div className="mt-2 pt-2 border-t">
+                  <p className="text-xs text-muted-foreground mb-1">Position in project timeline:</p>
+                  <div className="relative h-1 bg-muted rounded-full">
+                    {/* Project progress indicator */}
+                    <div className="absolute top-0 left-0 h-1 bg-primary/30 rounded-l-full" style={{ width: "100%" }} />
+
+                    {/* Milestone position */}
+                    {(() => {
+                      const milestoneDate = new Date(currentMilestone.dueDate)
+                      const position = Math.max(
+                        0,
+                        Math.min(
+                          ((milestoneDate.getTime() - projectStartDate.getTime()) /
+                            (projectEndDate.getTime() - projectStartDate.getTime())) *
+                            100,
+                          100,
+                        ),
+                      )
+
+                      return (
+                        <div
+                          className="absolute top-0 w-2 h-2 bg-primary rounded-full -translate-x-1 -translate-y-0.5"
+                          style={{ left: `${position}%` }}
+                        />
+                      )
+                    })()}
+                  </div>
+                  <div className="flex justify-between mt-1 text-xs text-muted-foreground">
+                    <span>Start</span>
+                    <span>End</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Deliverables Section */}
+            <div className="space-y-2 pt-2 border-t">
+              <Label className="flex items-center gap-2">
+                <ListChecks className="h-4 w-4" /> Deliverables
+              </Label>
+
+              {currentMilestone.deliverables.length > 0 ? (
+                <div className="border rounded-md p-2 space-y-2 max-h-[200px] overflow-y-auto">
+                  {currentMilestone.deliverables.map((deliverable) => (
+                    <div key={deliverable.id} className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => handleToggleDeliverable(deliverable.id)}
+                      >
+                        {deliverable.completed ? (
+                          <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <Circle className="h-4 w-4" />
+                        )}
+                        <span className="sr-only">Toggle completion</span>
+                      </Button>
+                      <span className="flex-1 text-sm">{deliverable.description}</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-destructive"
+                        onClick={() => handleRemoveDeliverable(deliverable.id)}
+                      >
+                        <X className="h-4 w-4" />
+                        <span className="sr-only">Remove</span>
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="border border-dashed rounded-md p-4 text-center text-muted-foreground">
+                  <p className="text-sm">No deliverables added yet</p>
+                </div>
+              )}
+
+              <div className="flex gap-2 mt-2">
+                <Input
+                  placeholder="Add a deliverable item..."
+                  value={newDeliverable}
+                  onChange={(e) => setNewDeliverable(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && newDeliverable.trim()) {
+                      e.preventDefault()
+                      handleAddDeliverable()
+                    }
+                  }}
+                />
+                <Button type="button" size="sm" onClick={handleAddDeliverable} disabled={!newDeliverable.trim()}>
+                  <Plus className="h-4 w-4" />
+                  <span className="sr-only">Add</span>
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Add specific items that will be delivered as part of this milestone
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowMilestoneDialog(false)}>
+              <X className="h-4 w-4 mr-2" />
+              Cancel
+            </Button>
+            <Button onClick={handleSaveMilestone}>
+              <Check className="h-4 w-4 mr-2" />
+              {editingMilestoneId ? "Update Milestone" : "Add Milestone"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
