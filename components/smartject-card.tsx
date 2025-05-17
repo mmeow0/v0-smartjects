@@ -1,112 +1,142 @@
-'use client'
+"use client";
 
-import { useState } from "react"
-import Image from "next/image"
+import { JSX, useState } from "react";
+import Image from "next/image";
 import {
-  Card, CardContent, CardDescription, CardFooter,
-  CardHeader, CardTitle
-} from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
-  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger
-} from "@/components/ui/tooltip"
-import { Heart, Briefcase, Wrench, MessageSquare, ChevronRight, Building, Target, Lightbulb, Factory, LayoutDashboard, Plus } from 'lucide-react'
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useAuth } from "@/components/auth-provider"
-import type { SmartjectType } from "@/lib/types"
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Heart,
+  Briefcase,
+  Wrench,
+  MessageSquare,
+  ChevronRight,
+  Building,
+  Target,
+  Lightbulb,
+  Factory,
+  LayoutDashboard,
+  Plus,
+} from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/auth-provider";
+import type { SmartjectType } from "@/lib/types";
 
 interface SmartjectCardProps {
-  smartject: SmartjectType
+  smartject: SmartjectType;
 }
 
 export function SmartjectCard({ smartject }: SmartjectCardProps) {
-  const { user, isAuthenticated } = useAuth()
-  const router = useRouter()
-  const [votes, setVotes] = useState(smartject.votes)
-  
+  const { user, isAuthenticated } = useAuth();
+  const router = useRouter();
+  const [votes, setVotes] = useState(smartject.votes);
+
   // Constants for limiting displayed items
-  const MAX_INDUSTRIES = 3
-  const MAX_BUSINESS_FUNCTIONS = 3
-  
+  const MAX_INDUSTRIES = 3;
+  const MAX_BUSINESS_FUNCTIONS = 3;
+
   const handleVote = (type: "believe" | "need" | "provide") => {
     if (!isAuthenticated) {
       // Redirect to login or show login modal
-      return
+      return;
     }
 
     setVotes((prev) => ({
       ...prev,
       [type]: prev[type] + 1,
-    }))
-  }
-  
+    }));
+  };
+
   // Determine which industries to show directly
-  const visibleIndustries = smartject.industries?.slice(0, MAX_INDUSTRIES) || []
-  const hiddenIndustriesCount = (smartject.industries?.length || 0) - MAX_INDUSTRIES
-  
+  const visibleIndustries =
+    smartject.industries?.slice(0, MAX_INDUSTRIES) || [];
+  const hiddenIndustriesCount =
+    (smartject.industries?.length || 0) - MAX_INDUSTRIES;
+
   // Determine which business functions to show directly
-  const visibleBusinessFunctions = smartject.businessFunctions?.slice(0, MAX_BUSINESS_FUNCTIONS) || []
-  const hiddenBusinessFunctionsCount = (smartject.businessFunctions?.length || 0) - MAX_BUSINESS_FUNCTIONS
+  const visibleBusinessFunctions =
+    smartject.businessFunctions?.slice(0, MAX_BUSINESS_FUNCTIONS) || [];
+  const hiddenBusinessFunctionsCount =
+    (smartject.businessFunctions?.length || 0) - MAX_BUSINESS_FUNCTIONS;
+
+  const renderClampedText = (
+    icon: JSX.Element,
+    label: string,
+    text: string
+  ) => (
+    <div className="space-y-1">
+      <div className="flex items-center gap-1.5 text-sm font-medium">
+        {icon}
+        <span className="text-muted-foreground">{label}</span>
+      </div>
+      <TooltipProvider delayDuration={500}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <p className="text-sm line-clamp-2 cursor-help">{text}</p>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-xs p-2">{text}</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    </div>
+  );
 
   return (
     <Card className="h-full flex flex-col overflow-hidden transition-all duration-200 hover:shadow-md">
       {/* Card Image */}
       {smartject.image && (
         <div className="relative w-full h-40 overflow-hidden">
-          <Image 
-            src={smartject.image || "/placeholder.svg"} 
+          <Image
+            src={smartject.image || "/placeholder.svg"}
             alt={smartject.title}
             fill
-            className="object-cover"
+            className="object-contain"
           />
         </div>
       )}
-      
+
       <CardHeader className="pb-2 pt-4">
-        <CardTitle className="text-lg line-clamp-1">{smartject.title}</CardTitle>
+        <CardTitle className="text-lg line-clamp-1">
+          {smartject.title}
+        </CardTitle>
       </CardHeader>
 
       <CardContent className="flex-grow space-y-3 px-5">
         {/* Problem */}
-        {smartject.problematics && (
-          <div className="space-y-1">
-            <div className="flex items-center gap-1.5 text-sm font-medium">
-              <Lightbulb className="h-3.5 w-3.5 text-amber-500" />
-              <span className="text-muted-foreground">Problem:</span>
-            </div>
-            <p className="text-sm line-clamp-2">
-              {smartject.problematics}
-            </p>
-          </div>
-        )}
+        {smartject.problematics &&
+          renderClampedText(
+            <Lightbulb className="h-3.5 w-3.5 text-amber-500" />,
+            "Problem:",
+            smartject.problematics
+          )}
 
         {/* Scope */}
-        {smartject.scope && (
-          <div className="space-y-1">
-            <div className="flex items-center gap-1.5 text-sm font-medium">
-              <Target className="h-3.5 w-3.5 text-blue-500" />
-              <span className="text-muted-foreground">Scope:</span>
-            </div>
-            <p className="text-sm line-clamp-2">
-              {smartject.scope}
-            </p>
-          </div>
-        )}
+        {smartject.scope &&
+          renderClampedText(
+            <Target className="h-3.5 w-3.5 text-blue-500" />,
+            "Scope:",
+            smartject.scope
+          )}
 
         {/* Use Case */}
-        {smartject.useCase && (
-          <div className="space-y-1">
-            <div className="flex items-center gap-1.5 text-sm font-medium">
-              <Building className="h-3.5 w-3.5 text-green-500" />
-              <span className="text-muted-foreground">Use cases:</span>
-            </div>
-            <p className="text-sm line-clamp-2">
-              {smartject.useCase}
-            </p>
-          </div>
-        )}
+        {smartject.useCase &&
+          renderClampedText(
+            <Building className="h-3.5 w-3.5 text-green-500" />,
+            "Use cases:",
+            smartject.useCase
+          )}
 
         {/* Industries */}
         {smartject.industries?.length > 0 && (
@@ -121,23 +151,32 @@ export function SmartjectCard({ smartject }: SmartjectCardProps) {
                   {industry}
                 </Badge>
               ))}
-              
+
               {hiddenIndustriesCount > 0 && (
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Badge variant="outline" className="text-xs py-0 cursor-pointer">
+                      <Badge
+                        variant="outline"
+                        className="text-xs py-0 cursor-pointer"
+                      >
                         <Plus className="h-3 w-3 mr-1" />
                         {hiddenIndustriesCount} more
                       </Badge>
                     </TooltipTrigger>
                     <TooltipContent className="p-2 max-w-xs">
                       <div className="flex flex-wrap gap-1">
-                        {smartject.industries?.slice(MAX_INDUSTRIES).map((industry, i) => (
-                          <Badge key={i} variant="outline" className="text-xs">
-                            {industry}
-                          </Badge>
-                        ))}
+                        {smartject.industries
+                          ?.slice(MAX_INDUSTRIES)
+                          .map((industry, i) => (
+                            <Badge
+                              key={i}
+                              variant="outline"
+                              className="text-xs"
+                            >
+                              {industry}
+                            </Badge>
+                          ))}
                       </div>
                     </TooltipContent>
                   </Tooltip>
@@ -160,23 +199,32 @@ export function SmartjectCard({ smartject }: SmartjectCardProps) {
                   {func}
                 </Badge>
               ))}
-              
+
               {hiddenBusinessFunctionsCount > 0 && (
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Badge variant="secondary" className="text-xs py-0 cursor-pointer">
+                      <Badge
+                        variant="secondary"
+                        className="text-xs py-0 cursor-pointer"
+                      >
                         <Plus className="h-3 w-3 mr-1" />
                         {hiddenBusinessFunctionsCount} more
                       </Badge>
                     </TooltipTrigger>
                     <TooltipContent className="p-2 max-w-xs">
                       <div className="flex flex-wrap gap-1">
-                        {smartject.businessFunctions?.slice(MAX_BUSINESS_FUNCTIONS).map((func, i) => (
-                          <Badge key={i} variant="secondary" className="text-xs">
-                            {func}
-                          </Badge>
-                        ))}
+                        {smartject.businessFunctions
+                          ?.slice(MAX_BUSINESS_FUNCTIONS)
+                          .map((func, i) => (
+                            <Badge
+                              key={i}
+                              variant="secondary"
+                              className="text-xs"
+                            >
+                              {func}
+                            </Badge>
+                          ))}
                       </div>
                     </TooltipContent>
                   </Tooltip>
@@ -261,8 +309,8 @@ export function SmartjectCard({ smartject }: SmartjectCardProps) {
                   size="sm"
                   className="flex gap-1 h-8 px-2"
                   onClick={(e) => {
-                    e.preventDefault()
-                    router.push(`/smartject/${smartject.id}#comments`)
+                    e.preventDefault();
+                    router.push(`/smartject/${smartject.id}#comments`);
                   }}
                 >
                   <MessageSquare className="h-4 w-4" />
@@ -284,5 +332,5 @@ export function SmartjectCard({ smartject }: SmartjectCardProps) {
         </Button>
       </CardFooter>
     </Card>
-  )
+  );
 }

@@ -207,7 +207,7 @@ export default function SmartjectDetailPage({ params }: { params: Promise<{ id: 
                     src={smartject.image || "/placeholder.svg"}
                     alt={smartject.title}
                     fill
-                    className="object-cover"
+                    className="object-contain"
                   />
                 </div>
               )}
