@@ -90,7 +90,7 @@ export const mockSmartjects: SmartjectType[] = [
     },
     comments: 45,
     createdAt: "2025-04-16",
-    image: "/luxembourg.jpeg",
+    image: "/massachusetts.jpeg",
     mission:
       "Empower businesses to harness their data effectively by providing an interactive analytics platform that simplifies data visualization and decision-making processes.",
     problematics:
@@ -193,7 +193,7 @@ export const mockSmartjects: SmartjectType[] = [
     },
     comments: 38,
     createdAt: "2023-10-05",
-    image: "/luxembourg.jpeg",
+    image: "/berkeley.jpeg",
     mission:
       "Enhance navigation experience for visually impaired individuals using a cognitively inspired communication framework that utilizes knowledge graphs.",
     problematics: "Current assistive systems for the visually impaired either provide slow responses with high detail or quick responses lacking semantic depth. This trade-off limits their effectiveness. There is a pressing need for a solution that balances speed and clarity in communication to support safer navigation.",
@@ -227,7 +227,7 @@ export const mockSmartjects: SmartjectType[] = [
     },
     comments: 21,
     createdAt: "2023-12-15",
-    image: "/luxembourg.jpeg",
+    image: "/berkeley.jpeg",
     mission:
       "Automate the analysis of lab operational metrics to uncover bottlenecks and optimize workflows in scientific laboratories, particularly in pharmaceutical and biotechnology sectors.",
     problematics:
@@ -402,7 +402,7 @@ export const mockSmartjects: SmartjectType[] = [
   },
   comments: 18,
   createdAt: "2024-11-10",
-  image: "/luxembourg.jpeg",
+  image: "/berkeley.jpeg",
   mission:
     "To provide personalized, interactive support in electrical engineering education, enhancing students' self-efficacy and supporting their learning processes through an intelligent tutoring system that incorporates large language models.",
   problematics:
